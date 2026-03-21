@@ -28,40 +28,52 @@ export default function NavBar() {
       position: 'fixed', bottom: 0, left: 0, right: 0,
       background: 'var(--surface)',
       borderTop: '1px solid var(--border)',
-      display: 'flex', justifyContent: 'space-around',
-      padding: '8px 0 12px', zIndex: 50,
+      zIndex: 50,
+      paddingBottom: 'env(safe-area-inset-bottom)',
     }}>
-      {visible.map(({ path, label, icon: Icon, roles }) => {
-        const active = location.pathname === path;
-        const isInv = path === '/inventario';
-        return (
-          <button key={path} onClick={() => navigate(path)} style={{
-            display: 'flex', flexDirection: 'column', alignItems: 'center',
-            gap: 3, background: 'none', padding: '4px 8px',
-            color: active ? 'var(--primary)' : 'var(--text2)',
-            position: 'relative',
-          }}>
-            <Icon size={20} />
-            {isInv && alertas > 0 && (
-              <span style={{
-                position: 'absolute', top: 0, right: 4,
-                background: 'var(--danger)', color: '#fff',
-                borderRadius: '50%', width: 16, height: 16,
-                fontSize: 10, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontWeight: 700,
-              }}>{alertas}</span>
-            )}
-            <span style={{ fontSize: 10, fontWeight: active ? 600 : 400 }}>{label}</span>
-          </button>
-        );
-      })}
-      <button onClick={logout} style={{
-        display: 'flex', flexDirection: 'column', alignItems: 'center',
-        gap: 3, background: 'none', padding: '4px 8px', color: 'var(--text2)',
+      <div style={{
+        display: 'flex',
+        overflowX: 'auto',
+        scrollbarWidth: 'none',
+        WebkitOverflowScrolling: 'touch',
+        padding: '8px 4px 12px',
       }}>
-        <LogOut size={20} />
-        <span style={{ fontSize: 10 }}>Salir</span>
-      </button>
+        {visible.map(({ path, label, icon: Icon }) => {
+          const active = location.pathname === path;
+          const isInv = path === '/inventario';
+          return (
+            <button key={path} onClick={() => navigate(path)} style={{
+              display: 'flex', flexDirection: 'column', alignItems: 'center',
+              gap: 3, background: 'none', padding: '4px 12px',
+              color: active ? 'var(--primary)' : 'var(--text2)',
+              position: 'relative', flexShrink: 0,
+              minWidth: 60,
+            }}>
+              <Icon size={20} />
+              {isInv && alertas > 0 && (
+                <span style={{
+                  position: 'absolute', top: 0, right: 8,
+                  background: 'var(--danger)', color: '#fff',
+                  borderRadius: '50%', width: 16, height: 16,
+                  fontSize: 10, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontWeight: 700,
+                }}>{alertas}</span>
+              )}
+              <span style={{ fontSize: 10, fontWeight: active ? 600 : 400, whiteSpace: 'nowrap' }}>
+                {label}
+              </span>
+            </button>
+          );
+        })}
+        <button onClick={logout} style={{
+          display: 'flex', flexDirection: 'column', alignItems: 'center',
+          gap: 3, background: 'none', padding: '4px 12px',
+          color: 'var(--text2)', flexShrink: 0, minWidth: 60,
+        }}>
+          <LogOut size={20} />
+          <span style={{ fontSize: 10, whiteSpace: 'nowrap' }}>Salir</span>
+        </button>
+      </div>
     </nav>
   );
 }
