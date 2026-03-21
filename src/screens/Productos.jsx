@@ -26,9 +26,14 @@ export default function Productos() {
     if (editId) {
       await call('updateProducto', { ...form, id: editId });
     } else {
-      await call('createProducto', { ...form, activo: true });
-      // Crear fila en inventario con stock 0
-      await call('ajustarInventario', { productoId: form.sku, cantidad: 0, tipo: 'ajuste' });
+      const result = await call('createProducto', { ...form, activo: true });
+      await call('ajustarInventario', {
+        productoId: result.id,
+        sku: form.sku,
+        nombre: form.nombre,
+        cantidad: 0,
+        tipo: 'ajuste',
+      });
     }
     setModal(false);
     load();
