@@ -87,7 +87,11 @@ export default function Incidencias() {
                 </div>
                 <div style={{ fontSize: 13 }}>{i.nombre}</div>
                 <div style={{ fontSize: 12, color: 'var(--text2)', marginTop: 4 }}>
-                  Pedido: {i.cantPedida} · Entregado: {i.cantEntregada} ·{' '}
+                  Pedido: {i.cantPedida} ·{' '}
+                  {i.tipo === 'DESPACHO'
+                    ? <span>Despachado: {i.cantEntregada}</span>
+                    : <span>Entregado: {i.cantEntregada}</span>
+                  } ·{' '}
                   <span style={{ color: 'var(--danger)', fontWeight: 600 }}>Dif: {i.diferencia}</span>
                 </div>
                 {i.notas && (
@@ -113,7 +117,9 @@ export default function Incidencias() {
           <div style={{ marginBottom: 16 }}>
             <div style={{ fontWeight: 600 }}>{modal.canalNombre} · {modal.nombre}</div>
             <div style={{ fontSize: 13, color: 'var(--text2)', marginTop: 4 }}>
-              Pedido: {modal.cantPedida} · Entregado: {modal.cantEntregada} · Diferencia: {modal.diferencia}
+              Pedido: {modal.cantPedida} ·{' '}
+              {modal.tipo === 'DESPACHO' ? 'Despachado' : 'Entregado'}: {modal.cantEntregada} ·{' '}
+              Diferencia: {modal.diferencia}
             </div>
           </div>
           <div className="form-group">
