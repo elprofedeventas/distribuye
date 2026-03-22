@@ -74,7 +74,7 @@ export default function App() {
           </ProtectedRoute>
         } />
         <Route path="incidencias" element={
-          <ProtectedRoute roles={[ROLES.ADMIN]}>
+          <ProtectedRoute roles={[ROLES.ADMIN, ROLES.VENDEDOR]}>
             <Incidencias />
           </ProtectedRoute>
         } />
