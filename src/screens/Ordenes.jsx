@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useApi } from '../hooks/useApi';
 import { ESTADOS_ORDEN, ESTADO_COLORS, ESTADO_LABELS, formatFecha } from '../utils/constants';
 import Badge from '../components/Badge';
@@ -10,9 +10,10 @@ const FILTROS = ['TODAS', ...Object.keys(ESTADOS_ORDEN)];
 export default function Ordenes() {
   const { call, loading } = useApi();
   const navigate = useNavigate();
+  const location = useLocation();
   const [ordenes, setOrdenes] = useState([]);
   const [incidencias, setIncidencias] = useState([]);
-  const [filtro, setFiltro] = useState('TODAS');
+  const [filtro, setFiltro] = useState(location.state?.filtro || 'TODAS');
 
   useEffect(() => {
     Promise.all([
