@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useApi } from '../hooks/useApi';
 import { ESTADOS_ORDEN, ESTADO_COLORS, ESTADO_LABELS, formatFecha } from '../utils/constants';
 import Badge from '../components/Badge';
-import { Plus } from 'lucide-react';
+import { Plus, AlertTriangle } from 'lucide-react';
 
 const FILTROS = ['TODAS', ...Object.keys(ESTADOS_ORDEN)];
 
@@ -11,11 +11,23 @@ export default function Ordenes() {
   const { call, loading } = useApi();
   const navigate = useNavigate();
   const [ordenes, setOrdenes] = useState([]);
+  const [incidencias, setIncidencias] = useState([]);
   const [filtro, setFiltro] = useState('TODAS');
 
-  useEffect(() => { call('getOrdenes').then(d => setOrdenes(d || [])); }, []);
+  useEffect(() => {
+    Promise.all([
+      call('getOrdenes'),
+      call('getIncidencias'),
+    ]).then(([ords, incs]) => {
+      setOrdenes(ords || []);
+      setIncidencias(incs || []);
+    });
+  }, []);
 
   const visibles = filtro === 'TODAS' ? ordenes : ordenes.filter(o => o.estado === filtro);
+
+  const getIncidenciasOrden = (ordenId) =>
+    incidencias.filter(i => i.ordenId === ordenId && i.estado === 'ABIERTA');
 
   return (
     <div className="page">
@@ -43,34 +55,47 @@ export default function Ordenes() {
       {visibles.length === 0 && !loading && <p className="empty">Sin órdenes</p>}
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-        {visibles.map(o => (
-          <div key={o.id} className="card" style={{ cursor: 'pointer' }}
-            onClick={() => navigate(`/ordenes/${o.id}`)}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-              <div>
-                {o.numeroOrden && (
-                  <div style={{ fontSize: 11, color: 'var(--primary)', fontWeight: 600, marginBottom: 2 }}>
-                    {o.numeroOrden}
+        {visibles.map(o => {
+          const incsOrden = getIncidenciasOrden(o.id);
+          const tieneIncidencia = incsOrden.length > 0;
+          return (
+            <div key={o.id} className="card"
+              style={{ cursor: 'pointer', borderColor: tieneIncidencia ? 'var(--danger)' : 'var(--border)' }}
+              onClick={() => navigate(`/ordenes/${o.id}`)}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div>
+                  {o.numeroOrden && (
+                    <div style={{ fontSize: 11, color: 'var(--primary)', fontWeight: 600, marginBottom: 2 }}>
+                      {o.numeroOrden}
+                    </div>
+                  )}
+                  <div style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    {tieneIncidencia && <AlertTriangle size={14} color="var(--danger)" />}
+                    {o.canalNombre}
                   </div>
-                )}
-                <div style={{ fontWeight: 600 }}>{o.canalNombre}</div>
-                <div style={{ fontSize: 12, color: 'var(--text2)', marginTop: 2 }}>
-                  {formatFecha(o.fecha)}
-                  {o.fechaDespacho ? ` · Despacho: ${formatFecha(o.fechaDespacho)}` : ''}
+                  <div style={{ fontSize: 12, color: 'var(--text2)', marginTop: 2 }}>
+                    {formatFecha(o.fecha)}
+                    {o.fechaDespacho ? ` · Despacho: ${formatFecha(o.fechaDespacho)}` : ''}
+                  </div>
+                  <div style={{ fontSize: 13, color: 'var(--success)', marginTop: 4 }}>
+                    ${Number(o.total || 0).toFixed(2)}
+                  </div>
+                  {tieneIncidencia && (
+                    <div style={{ fontSize: 11, color: 'var(--danger)', marginTop: 4 }}>
+                      {incsOrden.length} incidencia{incsOrden.length > 1 ? 's' : ''} abierta{incsOrden.length > 1 ? 's' : ''} · {incsOrden[0].tipo === 'DESPACHO' ? 'Incidencia en despacho' : 'Incidencia en entrega'}
+                    </div>
+                  )}
                 </div>
-                <div style={{ fontSize: 13, color: 'var(--success)', marginTop: 4 }}>
-                  ${Number(o.total || 0).toFixed(2)}
-                </div>
+                <Badge label={ESTADO_LABELS[o.estado] || o.estado} color={ESTADO_COLORS[o.estado] || '#94a3b8'} />
               </div>
-              <Badge label={ESTADO_LABELS[o.estado] || o.estado} color={ESTADO_COLORS[o.estado] || '#94a3b8'} />
+              {o.notas && (
+                <div style={{ fontSize: 12, color: 'var(--text2)', marginTop: 8, borderTop: '1px solid var(--border)', paddingTop: 8 }}>
+                  {o.notas}
+                </div>
+              )}
             </div>
-            {o.notas && (
-              <div style={{ fontSize: 12, color: 'var(--text2)', marginTop: 8, borderTop: '1px solid var(--border)', paddingTop: 8 }}>
-                {o.notas}
-              </div>
-            )}
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
