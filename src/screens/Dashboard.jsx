@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import { useApi } from '../hooks/useApi';
-import { ESTADO_COLORS, ROLES, formatFecha } from '../utils/constants';
+import { ROLES, formatFecha } from '../utils/constants';
 import { AlertTriangle, ClipboardList, Truck, CheckCircle, FileEdit, Package } from 'lucide-react';
 
 export default function Dashboard() {
@@ -39,17 +39,17 @@ export default function Dashboard() {
   const cardsDespachador = [
     { label: 'Por despachar', value: conteo.programadas, icon: ClipboardList, color: 'var(--warning)', path: '/despacho' },
     { label: 'En camino', value: conteo.despachadas, icon: Truck, color: 'var(--purple)', path: '/despacho' },
-    { label: 'Entregadas hoy', value: conteo.entregadas, icon: CheckCircle, color: 'var(--success)', path: '/despacho' },
+    { label: 'Entregadas hoy', value: conteo.entregadas, icon: CheckCircle, color: 'var(--success)', path: '/ordenes', state: { filtro: 'ENTREGADA' } },
     { label: 'Incidencias', value: incidenciasAbiertas, icon: AlertTriangle, color: incidenciasAbiertas > 0 ? 'var(--warning)' : 'var(--text2)', path: '/incidencias' },
     { label: 'Alertas stock', value: alertas, icon: AlertTriangle, color: alertas > 0 ? 'var(--danger)' : 'var(--text2)', path: '/inventario' },
   ];
 
   const cardsAdmin = [
-    { label: 'Borradores', value: conteo.borradores, icon: FileEdit, color: 'var(--text2)', path: '/ordenes' },
-    { label: 'Confirmadas', value: conteo.confirmadas, icon: ClipboardList, color: 'var(--primary)', path: '/ordenes' },
+    { label: 'Borradores', value: conteo.borradores, icon: FileEdit, color: 'var(--text2)', path: '/ordenes', state: { filtro: 'BORRADOR' } },
+    { label: 'Confirmadas', value: conteo.confirmadas, icon: ClipboardList, color: 'var(--primary)', path: '/ordenes', state: { filtro: 'CONFIRMADA' } },
     { label: 'Por despachar', value: conteo.programadas, icon: Package, color: 'var(--warning)', path: '/despacho' },
     { label: 'En camino', value: conteo.despachadas, icon: Truck, color: 'var(--purple)', path: '/despacho' },
-    { label: 'Entregadas hoy', value: conteo.entregadas, icon: CheckCircle, color: 'var(--success)', path: '/ordenes' },
+    { label: 'Entregadas hoy', value: conteo.entregadas, icon: CheckCircle, color: 'var(--success)', path: '/ordenes', state: { filtro: 'ENTREGADA' } },
     { label: 'Incidencias', value: incidenciasAbiertas, icon: AlertTriangle, color: incidenciasAbiertas > 0 ? 'var(--warning)' : 'var(--text2)', path: '/incidencias' },
     { label: 'Alertas stock', value: alertas, icon: AlertTriangle, color: alertas > 0 ? 'var(--danger)' : 'var(--text2)', path: '/inventario' },
   ];
@@ -69,8 +69,9 @@ export default function Dashboard() {
         gap: 12,
         marginBottom: 24,
       }}>
-        {cards.map(({ label, value, icon: Icon, color, path }) => (
-          <div key={label} className="card" style={{ cursor: 'pointer' }} onClick={() => navigate(path)}>
+        {cards.map(({ label, value, icon: Icon, color, path, state }) => (
+          <div key={label} className="card" style={{ cursor: 'pointer' }}
+            onClick={() => navigate(path, { state })}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
                 <div style={{ fontSize: esDespachador ? 32 : 28, fontWeight: 700, color }}>
