@@ -6,12 +6,25 @@ import Modal from '../components/Modal';
 export default function Incidencias() {
   const { call, loading } = useApi();
   const [incidencias, setIncidencias] = useState([]);
+  const [ordenes, setOrdenes] = useState([]);
   const [filtro, setFiltro] = useState('ABIERTA');
   const [modal, setModal] = useState(null);
   const [notas, setNotas] = useState('');
 
-  const load = () => call('getIncidencias').then(d => setIncidencias(d || []));
+  const load = () => Promise.all([
+    call('getIncidencias'),
+    call('getOrdenes'),
+  ]).then(([incs, ords]) => {
+    setIncidencias(incs || []);
+    setOrdenes(ords || []);
+  });
+
   useEffect(() => { load(); }, []);
+
+  const getNumeroOrden = (ordenId) => {
+    const o = ordenes.find(o => o.id === ordenId);
+    return o?.numeroOrden || '';
+  };
 
   const visibles = incidencias.filter(i => filtro === 'TODAS' || i.estado === filtro);
 
@@ -60,61 +73,74 @@ export default function Incidencias() {
       )}
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-        {visibles.map(i => (
-          <div key={i.id} className="card"
-            style={{
-              borderColor: i.estado === 'ABIERTA' ? 'var(--danger)' : 'var(--border)',
-              cursor: i.estado === 'ABIERTA' ? 'pointer' : 'default'
-            }}
-            onClick={() => i.estado === 'ABIERTA' && (setModal(i), setNotas(i.notas || ''))}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-              <div style={{ flex: 1 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-                  {i.estado === 'ABIERTA'
-                    ? <AlertTriangle size={14} color="var(--danger)" />
-                    : <CheckCircle size={14} color="var(--success)" />}
-                  <span style={{ fontWeight: 600, fontSize: 13 }}>{i.canalNombre}</span>
-                  {i.tipo && (
-                    <span style={{
-                      fontSize: 10, fontWeight: 600, padding: '1px 6px', borderRadius: 4,
-                      background: i.tipo === 'DESPACHO' ? 'var(--purple)22' : 'var(--warning)22',
-                      color: i.tipo === 'DESPACHO' ? 'var(--purple)' : 'var(--warning)',
-                      border: `1px solid ${i.tipo === 'DESPACHO' ? 'var(--purple)' : 'var(--warning)'}44`,
-                    }}>
-                      {i.tipo === 'DESPACHO' ? 'Despacho' : 'Entrega'}
-                    </span>
+        {visibles.map(i => {
+          const numeroOrden = getNumeroOrden(i.ordenId);
+          return (
+            <div key={i.id} className="card"
+              style={{
+                borderColor: i.estado === 'ABIERTA' ? 'var(--danger)' : 'var(--border)',
+                cursor: i.estado === 'ABIERTA' ? 'pointer' : 'default'
+              }}
+              onClick={() => i.estado === 'ABIERTA' && (setModal(i), setNotas(i.notas || ''))}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div style={{ flex: 1 }}>
+                  {numeroOrden && (
+                    <div style={{ fontSize: 11, color: 'var(--primary)', fontWeight: 600, marginBottom: 4 }}>
+                      {numeroOrden}
+                    </div>
                   )}
-                </div>
-                <div style={{ fontSize: 13 }}>{i.nombre}</div>
-                <div style={{ fontSize: 12, color: 'var(--text2)', marginTop: 4 }}>
-                  Pedido: {i.cantPedida} ·{' '}
-                  {i.tipo === 'DESPACHO'
-                    ? <span>Despachado: {i.cantEntregada}</span>
-                    : <span>Entregado: {i.cantEntregada}</span>
-                  } ·{' '}
-                  <span style={{ color: 'var(--danger)', fontWeight: 600 }}>Dif: {i.diferencia}</span>
-                </div>
-                {i.notas && (
-                  <div style={{ fontSize: 12, color: 'var(--text2)', marginTop: 4 }}>
-                    {i.notas}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                    {i.estado === 'ABIERTA'
+                      ? <AlertTriangle size={14} color="var(--danger)" />
+                      : <CheckCircle size={14} color="var(--success)" />}
+                    <span style={{ fontWeight: 600, fontSize: 13 }}>{i.canalNombre}</span>
+                    {i.tipo && (
+                      <span style={{
+                        fontSize: 10, fontWeight: 600, padding: '1px 6px', borderRadius: 4,
+                        background: i.tipo === 'DESPACHO' ? 'var(--purple)22' : 'var(--warning)22',
+                        color: i.tipo === 'DESPACHO' ? 'var(--purple)' : 'var(--warning)',
+                        border: `1px solid ${i.tipo === 'DESPACHO' ? 'var(--purple)' : 'var(--warning)'}44`,
+                      }}>
+                        {i.tipo === 'DESPACHO' ? 'Despacho' : 'Entrega'}
+                      </span>
+                    )}
                   </div>
-                )}
-                <div style={{ fontSize: 11, color: 'var(--text2)', marginTop: 4 }}>
-                  {new Date(i.creadoEn).toLocaleDateString()}
-                  {i.cierreEn && ` · Cerrada: ${new Date(i.cierreEn).toLocaleDateString()}`}
+                  <div style={{ fontSize: 13 }}>{i.nombre}</div>
+                  <div style={{ fontSize: 12, color: 'var(--text2)', marginTop: 4 }}>
+                    Pedido: {i.cantPedida} ·{' '}
+                    {i.tipo === 'DESPACHO'
+                      ? <span>Despachado: {i.cantEntregada}</span>
+                      : <span>Entregado: {i.cantEntregada}</span>
+                    } ·{' '}
+                    <span style={{ color: 'var(--danger)', fontWeight: 600 }}>Dif: {i.diferencia}</span>
+                  </div>
+                  {i.notas && (
+                    <div style={{ fontSize: 12, color: 'var(--text2)', marginTop: 4 }}>
+                      {i.notas}
+                    </div>
+                  )}
+                  <div style={{ fontSize: 11, color: 'var(--text2)', marginTop: 4 }}>
+                    {new Date(i.creadoEn).toLocaleDateString()}
+                    {i.cierreEn && ` · Cerrada: ${new Date(i.cierreEn).toLocaleDateString()}`}
+                  </div>
                 </div>
+                {i.estado === 'ABIERTA' && (
+                  <span style={{ fontSize: 11, color: 'var(--primary)' }}>Cerrar →</span>
+                )}
               </div>
-              {i.estado === 'ABIERTA' && (
-                <span style={{ fontSize: 11, color: 'var(--primary)' }}>Cerrar →</span>
-              )}
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {modal && (
         <Modal title="Cerrar incidencia" onClose={() => setModal(null)}>
           <div style={{ marginBottom: 16 }}>
+            {getNumeroOrden(modal.ordenId) && (
+              <div style={{ fontSize: 11, color: 'var(--primary)', fontWeight: 600, marginBottom: 4 }}>
+                {getNumeroOrden(modal.ordenId)}
+              </div>
+            )}
             <div style={{ fontWeight: 600 }}>{modal.canalNombre} · {modal.nombre}</div>
             <div style={{ fontSize: 13, color: 'var(--text2)', marginTop: 4 }}>
               Pedido: {modal.cantPedida} ·{' '}
