@@ -13,7 +13,7 @@ const navItems = [
   { path: '/inventario', label: 'Inventario', icon: Warehouse, roles: [ROLES.ADMIN] },
   { path: '/ordenes', label: 'Órdenes', icon: ClipboardList, roles: [ROLES.ADMIN, ROLES.VENDEDOR] },
   { path: '/despacho', label: 'Despacho', icon: Truck, roles: [ROLES.ADMIN, ROLES.DESPACHADOR] },
-  { path: '/incidencias', label: 'Incidencias', icon: AlertTriangle, roles: [ROLES.ADMIN] },
+  { path: '/incidencias', label: 'Incidencias', icon: AlertTriangle, roles: [ROLES.ADMIN, ROLES.VENDEDOR] },
 ];
 
 export default function NavBar() {
