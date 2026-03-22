@@ -46,6 +46,11 @@ export default function Ordenes() {
             onClick={() => navigate(`/ordenes/${o.id}`)}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
               <div>
+                {o.numeroOrden && (
+                  <div style={{ fontSize: 11, color: 'var(--primary)', fontWeight: 600, marginBottom: 2 }}>
+                    {o.numeroOrden}
+                  </div>
+                )}
                 <div style={{ fontWeight: 600 }}>{o.canalNombre}</div>
                 <div style={{ fontSize: 12, color: 'var(--text2)', marginTop: 2 }}>
                   {formatFecha(o.fecha)}
