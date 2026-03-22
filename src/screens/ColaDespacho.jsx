@@ -58,6 +58,11 @@ export default function ColaDespacho() {
         </div>
 
         <div className="card" style={{ marginBottom: 16 }}>
+          {despachando.numeroOrden && (
+            <div style={{ fontSize: 11, color: 'var(--primary)', fontWeight: 600, marginBottom: 4 }}>
+              {despachando.numeroOrden}
+            </div>
+          )}
           <div style={{ fontWeight: 600 }}>{despachando.canalNombre}</div>
           <div style={{ fontSize: 12, color: 'var(--text2)' }}>
             Despacho: {formatFecha(despachando.fechaDespacho)}
@@ -128,7 +133,7 @@ export default function ColaDespacho() {
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 20 }}>
             {porDespachar.map(o => (
-              <OrdenCard key={o.id} o={o} onDespachar={() => abrirDespacho(o)} onEntrega={null} call={call} />
+              <OrdenCard key={o.id} o={o} onDespachar={() => abrirDespacho(o)} onEntrega={null} call={call} navigate={navigate} />
             ))}
           </div>
         </>
@@ -141,7 +146,7 @@ export default function ColaDespacho() {
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {despachadas.map(o => (
-              <OrdenCard key={o.id} o={o} onDespachar={null} onEntrega={() => navigate(`/despacho/${o.id}/entrega`)} call={call} />
+              <OrdenCard key={o.id} o={o} onDespachar={null} onEntrega={() => navigate(`/despacho/${o.id}/entrega`)} call={call} navigate={navigate} />
             ))}
           </div>
         </>
@@ -150,7 +155,7 @@ export default function ColaDespacho() {
   );
 }
 
-function OrdenCard({ o, onDespachar, onEntrega, call }) {
+function OrdenCard({ o, onDespachar, onEntrega, call, navigate }) {
   const [detalle, setDetalle] = useState([]);
   const [expanded, setExpanded] = useState(false);
   const [incidencias, setIncidencias] = useState([]);
@@ -168,9 +173,14 @@ function OrdenCard({ o, onDespachar, onEntrega, call }) {
 
   return (
     <div className="card" style={{ borderColor: incidencias.length > 0 ? 'var(--danger)' : 'var(--border)' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10, cursor: 'pointer' }}
         onClick={cargarDetalle}>
-        <div style={{ flex: 1, cursor: 'pointer' }}>
+        <div style={{ flex: 1 }}>
+          {o.numeroOrden && (
+            <div style={{ fontSize: 11, color: 'var(--primary)', fontWeight: 600, marginBottom: 2 }}>
+              {o.numeroOrden}
+            </div>
+          )}
           <div style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
             {incidencias.length > 0 && <AlertTriangle size={14} color="var(--danger)" />}
             {o.canalNombre}
@@ -222,7 +232,12 @@ function OrdenCard({ o, onDespachar, onEntrega, call }) {
           </button>
         )}
         {onEntrega && (
-          <button className="btn btn-ghost" style={{ flex: 1, justifyContent: 'center' }}
+          <button style={{
+            flex: 1, justifyContent: 'center',
+            display: 'inline-flex', alignItems: 'center', gap: 6,
+            padding: '10px 16px', borderRadius: 8, fontSize: 14, fontWeight: 500,
+            background: 'var(--warning)', color: '#fff', cursor: 'pointer', border: 'none',
+          }}
             onClick={onEntrega}>
             <PackageCheck size={14} /> Registrar entrega
           </button>
