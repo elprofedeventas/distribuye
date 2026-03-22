@@ -2,17 +2,17 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApi } from '../hooks/useApi';
 import { useApp } from '../context/AppContext';
+import { formatFecha } from '../utils/constants';
 import { Trash2, Plus } from 'lucide-react';
 
 export default function NuevaOrden() {
-  const { call, loading } = useApi();
+  const { call } = useApi();
   const { usuario } = useApp();
   const navigate = useNavigate();
 
   const [canales, setCanales] = useState([]);
   const [productos, setProductos] = useState([]);
   const [canalId, setCanalId] = useState('');
-  const [fecha, setFecha] = useState(new Date().toISOString().split('T')[0]);
   const [notas, setNotas] = useState('');
   const [lineas, setLineas] = useState([]);
   const [saving, setSaving] = useState(false);
@@ -23,11 +23,8 @@ export default function NuevaOrden() {
   }, []);
 
   const addLinea = () => setLineas(l => [...l, { productoId: '', cantidad: 1 }]);
-
   const setLinea = (i, k, v) => setLineas(l => l.map((x, j) => j === i ? { ...x, [k]: v } : x));
-
   const removeLinea = (i) => setLineas(l => l.filter((_, j) => j !== i));
-
   const getProducto = (id) => productos.find(p => p.id === id);
 
   const total = lineas.reduce((sum, l) => {
@@ -55,7 +52,7 @@ export default function NuevaOrden() {
         orden: {
           canalId,
           canalNombre: canal.nombre,
-          fecha,
+          fecha: formatFecha(new Date().toISOString()),
           notas,
           creadoPor: usuario?.nombre,
         },
@@ -76,14 +73,11 @@ export default function NuevaOrden() {
         <select value={canalId} onChange={e => setCanalId(e.target.value)}>
           <option value="">— Seleccionar canal —</option>
           {canales.map(c => (
-            <option key={c.id} value={c.id}>{c.nombre} {c.diaSemana ? `(${c.diaSemana})` : ''}</option>
+            <option key={c.id} value={c.id}>
+              {c.nombre} {c.diaSemana ? `(${c.diaSemana})` : ''}
+            </option>
           ))}
         </select>
-      </div>
-
-      <div className="form-group">
-        <label>Fecha</label>
-        <input type="date" value={fecha} onChange={e => setFecha(e.target.value)} />
       </div>
 
       <div className="form-group">
