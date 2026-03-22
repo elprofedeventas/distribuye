@@ -59,7 +59,14 @@ export default function OrdenDetalle() {
         <button className="btn btn-ghost" style={{ padding: '6px 10px' }} onClick={() => navigate(-1)}>
           <ArrowLeft size={16} />
         </button>
-        <h1 className="page-title" style={{ margin: 0, flex: 1 }}>{orden.canalNombre}</h1>
+        <h1 className="page-title" style={{ margin: 0, flex: 1 }}>
+          {orden.numeroOrden && (
+            <span style={{ fontSize: 12, color: 'var(--primary)', display: 'block', fontWeight: 600 }}>
+              {orden.numeroOrden}
+            </span>
+          )}
+          {orden.canalNombre}
+        </h1>
         <Badge label={orden.estado} color={ESTADO_COLORS[orden.estado] || '#94a3b8'} />
       </div>
 
