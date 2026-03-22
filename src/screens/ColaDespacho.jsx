@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useApi } from '../hooks/useApi';
 import { ESTADO_COLORS, formatFecha } from '../utils/constants';
 import Badge from '../components/Badge';
-import { Truck, PackageCheck } from 'lucide-react';
+import { Truck, PackageCheck, AlertTriangle } from 'lucide-react';
 
 export default function ColaDespacho() {
   const { call, loading } = useApi();
@@ -38,6 +38,7 @@ export default function ColaDespacho() {
     }));
     await call('registrarDespacho', {
       ordenId: despachando.id,
+      canalNombre: despachando.canalNombre,
       detalle: detalleDespacho,
     });
     setDespachando(null);
@@ -68,22 +69,39 @@ export default function ColaDespacho() {
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
-          {detalle.map(d => (
-            <div key={d.id} className="card">
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div>
-                  <div style={{ fontWeight: 500 }}>{d.nombre}</div>
-                  <div style={{ fontSize: 12, color: 'var(--text2)' }}>
-                    Pedido: <strong>{d.cantPedida}</strong> {d.unidad}
+          {detalle.map(d => {
+            const cantIngresada = Number(cantidades[d.id] ?? d.cantPedida);
+            const tieneIncidencia = cantIngresada < Number(d.cantPedida);
+            return (
+              <div key={d.id} className="card"
+                style={{ borderColor: tieneIncidencia ? 'var(--danger)' : 'var(--border)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <div>
+                    <div style={{ fontWeight: 500 }}>{d.nombre}</div>
+                    <div style={{ fontSize: 12, color: 'var(--text2)' }}>
+                      SKU: {d.sku} · {d.unidad}
+                    </div>
+                    <div style={{ fontSize: 12, color: 'var(--text2)', marginTop: 2 }}>
+                      Pedido: <strong>{d.cantPedida}</strong>
+                    </div>
+                    {tieneIncidencia && (
+                      <div style={{ fontSize: 12, color: 'var(--danger)', marginTop: 2, display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <AlertTriangle size={12} />
+                        Diferencia: {Number(d.cantPedida) - cantIngresada}
+                      </div>
+                    )}
                   </div>
+                  <input
+                    type="number" min={0} max={d.cantPedida}
+                    value={cantidades[d.id] ?? d.cantPedida}
+                    onChange={e => setCantidades(c => ({ ...c, [d.id]: e.target.value }))}
+                    style={{ width: 80, textAlign: 'center',
+                      borderColor: tieneIncidencia ? 'var(--danger)' : 'var(--border)' }}
+                  />
                 </div>
-                <input type="number" min={0} max={d.cantPedida}
-                  value={cantidades[d.id] ?? d.cantPedida}
-                  onChange={e => setCantidades(c => ({ ...c, [d.id]: e.target.value }))}
-                  style={{ width: 80, textAlign: 'center' }} />
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         <button className="btn btn-primary"
@@ -110,24 +128,7 @@ export default function ColaDespacho() {
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 20 }}>
             {porDespachar.map(o => (
-              <div key={o.id} className="card">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
-                  <div>
-                    <div style={{ fontWeight: 600 }}>{o.canalNombre}</div>
-                    <div style={{ fontSize: 12, color: 'var(--text2)', marginTop: 2 }}>
-                      Despacho: {formatFecha(o.fechaDespacho)}
-                    </div>
-                    <div style={{ fontSize: 13, color: 'var(--success)', marginTop: 2 }}>
-                      ${Number(o.total || 0).toFixed(2)}
-                    </div>
-                  </div>
-                  <Badge label={o.estado} color={ESTADO_COLORS[o.estado]} />
-                </div>
-                <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }}
-                  onClick={() => abrirDespacho(o)}>
-                  <Truck size={14} /> Despachar
-                </button>
-              </div>
+              <OrdenCard key={o.id} o={o} onDespachar={() => abrirDespacho(o)} onEntrega={null} call={call} />
             ))}
           </div>
         </>
@@ -140,28 +141,93 @@ export default function ColaDespacho() {
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {despachadas.map(o => (
-              <div key={o.id} className="card">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
-                  <div>
-                    <div style={{ fontWeight: 600 }}>{o.canalNombre}</div>
-                    <div style={{ fontSize: 12, color: 'var(--text2)', marginTop: 2 }}>
-                      Despacho: {formatFecha(o.fechaDespacho)}
-                    </div>
-                    <div style={{ fontSize: 13, color: 'var(--success)', marginTop: 2 }}>
-                      ${Number(o.total || 0).toFixed(2)}
-                    </div>
-                  </div>
-                  <Badge label={o.estado} color={ESTADO_COLORS[o.estado]} />
-                </div>
-                <button className="btn btn-ghost" style={{ width: '100%', justifyContent: 'center' }}
-                  onClick={() => navigate(`/despacho/${o.id}/entrega`)}>
-                  <PackageCheck size={14} /> Registrar entrega
-                </button>
-              </div>
+              <OrdenCard key={o.id} o={o} onDespachar={null} onEntrega={() => navigate(`/despacho/${o.id}/entrega`)} call={call} />
             ))}
           </div>
         </>
       )}
+    </div>
+  );
+}
+
+function OrdenCard({ o, onDespachar, onEntrega, call }) {
+  const [detalle, setDetalle] = useState([]);
+  const [expanded, setExpanded] = useState(false);
+  const [incidencias, setIncidencias] = useState([]);
+
+  const cargarDetalle = async () => {
+    if (expanded) { setExpanded(false); return; }
+    const [det, incs] = await Promise.all([
+      call('getOrdenDetalle', { ordenId: o.id }),
+      call('getIncidencias'),
+    ]);
+    setDetalle(det || []);
+    setIncidencias((incs || []).filter(i => i.ordenId === o.id && i.estado === 'ABIERTA'));
+    setExpanded(true);
+  };
+
+  return (
+    <div className="card" style={{ borderColor: incidencias.length > 0 ? 'var(--danger)' : 'var(--border)' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}
+        onClick={cargarDetalle}>
+        <div style={{ flex: 1, cursor: 'pointer' }}>
+          <div style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
+            {incidencias.length > 0 && <AlertTriangle size={14} color="var(--danger)" />}
+            {o.canalNombre}
+          </div>
+          <div style={{ fontSize: 12, color: 'var(--text2)', marginTop: 2 }}>
+            Despacho: {formatFecha(o.fechaDespacho)}
+          </div>
+          <div style={{ fontSize: 13, color: 'var(--success)', marginTop: 2 }}>
+            ${Number(o.total || 0).toFixed(2)}
+          </div>
+          <div style={{ fontSize: 11, color: 'var(--primary)', marginTop: 4 }}>
+            {expanded ? 'Ocultar detalle ▲' : 'Ver detalle ▼'}
+          </div>
+        </div>
+        <Badge label={o.estado} color={ESTADO_COLORS[o.estado]} />
+      </div>
+
+      {expanded && detalle.length > 0 && (
+        <div style={{ borderTop: '1px solid var(--border)', paddingTop: 10, marginBottom: 10 }}>
+          {detalle.map(d => (
+            <div key={d.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 6 }}>
+              <div>
+                <span style={{ fontWeight: 500 }}>{d.nombre}</span>
+                <span style={{ color: 'var(--text2)', marginLeft: 6 }}>SKU: {d.sku}</span>
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <span style={{ color: 'var(--text2)' }}>Pedido: {d.cantPedida}</span>
+                {Number(d.cantDespachada) > 0 && (
+                  <span style={{ color: 'var(--purple)', marginLeft: 8 }}>
+                    Desp: {d.cantDespachada}
+                  </span>
+                )}
+                {Number(d.cantEntregada) > 0 && (
+                  <span style={{ color: 'var(--success)', marginLeft: 8 }}>
+                    Ent: {d.cantEntregada}
+                  </span>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div style={{ display: 'flex', gap: 8 }}>
+        {onDespachar && (
+          <button className="btn btn-primary" style={{ flex: 1, justifyContent: 'center' }}
+            onClick={onDespachar}>
+            <Truck size={14} /> Despachar
+          </button>
+        )}
+        {onEntrega && (
+          <button className="btn btn-ghost" style={{ flex: 1, justifyContent: 'center' }}
+            onClick={onEntrega}>
+            <PackageCheck size={14} /> Registrar entrega
+          </button>
+        )}
+      </div>
     </div>
   );
 }
