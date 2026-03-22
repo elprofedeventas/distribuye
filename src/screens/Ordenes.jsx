@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApi } from '../hooks/useApi';
-import { ESTADOS_ORDEN, ESTADO_COLORS, formatFecha } from '../utils/constants';
+import { ESTADOS_ORDEN, ESTADO_COLORS, ESTADO_LABELS, formatFecha } from '../utils/constants';
 import Badge from '../components/Badge';
 import { Plus } from 'lucide-react';
 
@@ -34,7 +34,9 @@ export default function Ordenes() {
             background: filtro === f ? 'var(--primary)' : 'transparent',
             borderColor: filtro === f ? 'var(--primary)' : 'var(--border)',
             color: filtro === f ? '#fff' : 'var(--text2)',
-          }}>{f}</button>
+          }}>
+            {f === 'TODAS' ? 'TODAS' : ESTADO_LABELS[f]}
+          </button>
         ))}
       </div>
 
@@ -60,7 +62,7 @@ export default function Ordenes() {
                   ${Number(o.total || 0).toFixed(2)}
                 </div>
               </div>
-              <Badge label={o.estado} color={ESTADO_COLORS[o.estado] || '#94a3b8'} />
+              <Badge label={ESTADO_LABELS[o.estado] || o.estado} color={ESTADO_COLORS[o.estado] || '#94a3b8'} />
             </div>
             {o.notas && (
               <div style={{ fontSize: 12, color: 'var(--text2)', marginTop: 8, borderTop: '1px solid var(--border)', paddingTop: 8 }}>
