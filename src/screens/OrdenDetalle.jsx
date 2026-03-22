@@ -124,7 +124,7 @@ export default function OrdenDetalle() {
               onChange={e => { setFechaDespacho(e.target.value); setErrorFecha(''); }}
               style={{ flex: 1 }} />
             <button className="btn btn-primary" onClick={programar}>
-              <Truck size={16} /> Programar
+              <Truck size={16} /> Por despachar
             </button>
           </div>
           {errorFecha && <p style={{ color: 'var(--danger)', fontSize: 12 }}>{errorFecha}</p>}
