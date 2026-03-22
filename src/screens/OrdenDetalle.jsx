@@ -4,7 +4,7 @@ import { useApi } from '../hooks/useApi';
 import { ESTADO_COLORS, ESTADO_LABELS, ROLES, formatFecha } from '../utils/constants';
 import { useApp } from '../context/AppContext';
 import Badge from '../components/Badge';
-import { ArrowLeft, Truck, CalendarCheck, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, Truck, CalendarCheck, AlertTriangle, Plus, Trash2 } from 'lucide-react';
 
 export default function OrdenDetalle() {
   const { id } = useParams();
@@ -16,6 +16,10 @@ export default function OrdenDetalle() {
   const [incidencias, setIncidencias] = useState([]);
   const [fechaDespacho, setFechaDespacho] = useState('');
   const [errorFecha, setErrorFecha] = useState('');
+  const [editando, setEditando] = useState(false);
+  const [productos, setProductos] = useState([]);
+  const [lineas, setLineas] = useState([]);
+  const [saving, setSaving] = useState(false);
 
   const hoy = formatFecha(new Date().toISOString());
 
@@ -34,6 +38,72 @@ export default function OrdenDetalle() {
 
   useEffect(() => { load(); }, [id]);
 
+  const abrirEdicion = async () => {
+    const prods = await call('getProductos');
+    setProductos(prods || []);
+    setLineas(detalle.map(d => ({
+      id: d.id,
+      productoId: d.productoId,
+      sku: d.sku,
+      nombre: d.nombre,
+      unidad: d.unidad,
+      precio: d.precio,
+      cantPedida: d.cantPedida,
+    })));
+    setEditando(true);
+  };
+
+  const getProducto = (pid) => productos.find(p => p.id === pid);
+
+  const setLinea = (i, k, v) => setLineas(l => l.map((x, j) => j === i ? { ...x, [k]: v } : x));
+
+  const addLinea = () => setLineas(l => [...l, { productoId: '', cantPedida: 1 }]);
+
+  const removeLinea = (i) => setLineas(l => l.filter((_, j) => j !== i));
+
+  const guardarEdicion = async () => {
+    if (lineas.length === 0) return;
+    setSaving(true);
+    try {
+      // Actualizar líneas existentes y agregar nuevas
+      for (const linea of lineas) {
+        const p = linea.productoId ? getProducto(linea.productoId) : null;
+        if (linea.id) {
+          await call('updateOrdenDetalle', {
+            id: linea.id,
+            cantPedida: Number(linea.cantPedida),
+          });
+        } else if (p) {
+          await call('createOrdenDetalle', {
+            ordenId: id,
+            productoId: p.id,
+            sku: p.sku,
+            nombre: p.nombre,
+            unidad: p.unidad,
+            precio: p.precio,
+            cantPedida: Number(linea.cantPedida),
+            cantDespachada: 0,
+            cantEntregada: 0,
+            diferencia: 0,
+          });
+        }
+      }
+      // Recalcular total
+      const nuevoTotal = lineas.reduce((sum, l) => {
+        const p = l.id
+          ? detalle.find(d => d.id === l.id)
+          : getProducto(l.productoId);
+        const precio = p?.precio || 0;
+        return sum + Number(precio) * Number(l.cantPedida);
+      }, 0);
+      await call('updateOrdenEstado', { id, total: nuevoTotal, estado: 'BORRADOR' });
+      setEditando(false);
+      load();
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const confirmar = async () => {
     await call('updateOrdenEstado', { id, estado: 'CONFIRMADA' });
     load();
@@ -51,8 +121,90 @@ export default function OrdenDetalle() {
 
   const puedeConfirmar = orden.estado === 'BORRADOR' && usuario?.rol !== ROLES.DESPACHADOR;
   const puedeProgramar = orden.estado === 'CONFIRMADA' && usuario?.rol !== ROLES.DESPACHADOR;
+  const puedeEditar = orden.estado === 'BORRADOR' && usuario?.rol !== ROLES.DESPACHADOR;
   const incidenciasAbiertas = incidencias.filter(i => i.estado === 'ABIERTA');
 
+  // Vista edición
+  if (editando) {
+    return (
+      <div className="page">
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+          <button className="btn btn-ghost" style={{ padding: '6px 10px' }}
+            onClick={() => setEditando(false)}>←</button>
+          <h1 className="page-title" style={{ margin: 0 }}>Editar orden</h1>
+        </div>
+
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+          <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)' }}>Productos</span>
+          <button className="btn btn-ghost" style={{ padding: '6px 10px', fontSize: 13 }} onClick={addLinea}>
+            <Plus size={14} /> Agregar
+          </button>
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 20 }}>
+          {lineas.map((l, i) => {
+            const p = l.id
+              ? detalle.find(d => d.id === l.id)
+              : getProducto(l.productoId);
+            return (
+              <div key={i} className="card">
+                <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+                  <div style={{ flex: 1 }}>
+                    {l.id ? (
+                      <div style={{ fontWeight: 500, marginBottom: 8 }}>{l.nombre}
+                        <span style={{ fontSize: 12, color: 'var(--text2)', marginLeft: 6 }}>({l.sku})</span>
+                      </div>
+                    ) : (
+                      <select value={l.productoId}
+                        onChange={e => {
+                          const prod = getProducto(e.target.value);
+                          setLineas(ls => ls.map((x, j) => j === i ? {
+                            ...x,
+                            productoId: e.target.value,
+                            sku: prod?.sku || '',
+                            nombre: prod?.nombre || '',
+                            unidad: prod?.unidad || '',
+                            precio: prod?.precio || 0,
+                          } : x));
+                        }}
+                        style={{ marginBottom: 8 }}>
+                        <option value="">— Producto —</option>
+                        {productos.map(p => (
+                          <option key={p.id} value={p.id}>{p.nombre} ({p.sku})</option>
+                        ))}
+                      </select>
+                    )}
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                      <input type="number" min={1} value={l.cantPedida}
+                        onChange={e => setLinea(i, 'cantPedida', e.target.value)}
+                        style={{ width: 80 }} />
+                      {p && <span style={{ fontSize: 12, color: 'var(--text2)' }}>{p.unidad || l.unidad}</span>}
+                      {p && <span style={{ fontSize: 13, color: 'var(--success)', marginLeft: 'auto' }}>
+                        ${(Number(p.precio || l.precio) * Number(l.cantPedida)).toFixed(2)}
+                      </span>}
+                    </div>
+                  </div>
+                  {!l.id && (
+                    <button className="btn btn-ghost" style={{ padding: '6px 10px' }} onClick={() => removeLinea(i)}>
+                      <Trash2 size={14} color="var(--danger)" />
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        <button className="btn btn-primary"
+          style={{ width: '100%', justifyContent: 'center', opacity: saving ? 0.5 : 1 }}
+          onClick={guardarEdicion} disabled={saving}>
+          {saving ? 'Guardando...' : 'Guardar cambios'}
+        </button>
+      </div>
+    );
+  }
+
+  // Vista normal
   return (
     <div className="page">
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
@@ -114,9 +266,18 @@ export default function OrdenDetalle() {
         )}
       </div>
 
-      <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', marginBottom: 10 }}>
-        Productos ({detalle.length})
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+        <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)' }}>
+          Productos ({detalle.length})
+        </span>
+        {puedeEditar && (
+          <button className="btn btn-ghost" style={{ padding: '6px 12px', fontSize: 12 }}
+            onClick={abrirEdicion}>
+            ✎ Editar
+          </button>
+        )}
       </div>
+
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
         {detalle.map(d => {
           const incDet = incidencias.find(i => i.productoId === d.productoId && i.estado === 'ABIERTA');
