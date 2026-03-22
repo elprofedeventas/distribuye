@@ -1,25 +1,28 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useApi } from '../hooks/useApi';
-import { ESTADO_COLORS, ESTADOS_ORDEN, ROLES } from '../utils/constants';
+import { ESTADO_COLORS, ROLES, formatFecha } from '../utils/constants';
 import { useApp } from '../context/AppContext';
 import Badge from '../components/Badge';
 import { ArrowLeft, Truck, CalendarCheck } from 'lucide-react';
 
 export default function OrdenDetalle() {
   const { id } = useParams();
-  const { call, loading } = useApi();
+  const { call } = useApi();
   const { usuario } = useApp();
   const navigate = useNavigate();
   const [orden, setOrden] = useState(null);
   const [detalle, setDetalle] = useState([]);
   const [fechaDespacho, setFechaDespacho] = useState('');
+  const [errorFecha, setErrorFecha] = useState('');
+
+  const hoy = formatFecha(new Date().toISOString());
 
   const load = async () => {
     const ordenes = await call('getOrdenes');
     const o = (ordenes || []).find(x => x.id === id);
     setOrden(o);
-    if (o?.fechaDespacho) setFechaDespacho(o.fechaDespacho);
+    if (o?.fechaDespacho) setFechaDespacho(formatFecha(o.fechaDespacho));
     const det = await call('getOrdenDetalle', { ordenId: id });
     setDetalle(det || []);
   };
@@ -32,15 +35,17 @@ export default function OrdenDetalle() {
   };
 
   const programar = async () => {
-    if (!fechaDespacho) return;
+    if (!fechaDespacho) { setErrorFecha('Ingresa una fecha de despacho'); return; }
+    if (fechaDespacho < hoy) { setErrorFecha('La fecha no puede ser anterior a hoy'); return; }
+    setErrorFecha('');
     await call('updateOrdenEstado', { id, estado: 'PROGRAMADA', fechaDespacho });
     load();
   };
 
   if (!orden) return <div className="page"><p className="empty">Cargando...</p></div>;
 
-  const puedeProgramar = orden.estado === 'CONFIRMADA' && usuario?.rol !== ROLES.DESPACHADOR;
   const puedeConfirmar = orden.estado === 'BORRADOR' && usuario?.rol !== ROLES.DESPACHADOR;
+  const puedeProgramar = orden.estado === 'CONFIRMADA' && usuario?.rol !== ROLES.DESPACHADOR;
 
   return (
     <div className="page">
@@ -55,12 +60,12 @@ export default function OrdenDetalle() {
       <div className="card" style={{ marginBottom: 16 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
           <span style={{ color: 'var(--text2)' }}>Fecha orden</span>
-          <span>{orden.fecha}</span>
+          <span>{formatFecha(orden.fecha)}</span>
         </div>
         {orden.fechaDespacho && (
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginTop: 8 }}>
             <span style={{ color: 'var(--text2)' }}>Fecha despacho</span>
-            <span>{orden.fechaDespacho}</span>
+            <span>{formatFecha(orden.fechaDespacho)}</span>
           </div>
         )}
         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginTop: 8 }}>
@@ -104,19 +109,25 @@ export default function OrdenDetalle() {
       </div>
 
       {puedeConfirmar && (
-        <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', marginBottom: 10 }}
+        <button className="btn btn-primary"
+          style={{ width: '100%', justifyContent: 'center', marginBottom: 10 }}
           onClick={confirmar}>
           <CalendarCheck size={16} /> Confirmar orden
         </button>
       )}
 
       {puedeProgramar && (
-        <div style={{ display: 'flex', gap: 10 }}>
-          <input type="date" value={fechaDespacho} onChange={e => setFechaDespacho(e.target.value)}
-            style={{ flex: 1 }} />
-          <button className="btn btn-primary" onClick={programar}>
-            <Truck size={16} /> Programar
-          </button>
+        <div>
+          <div style={{ display: 'flex', gap: 10, marginBottom: 6 }}>
+            <input type="date" value={fechaDespacho}
+              min={hoy}
+              onChange={e => { setFechaDespacho(e.target.value); setErrorFecha(''); }}
+              style={{ flex: 1 }} />
+            <button className="btn btn-primary" onClick={programar}>
+              <Truck size={16} /> Programar
+            </button>
+          </div>
+          {errorFecha && <p style={{ color: 'var(--danger)', fontSize: 12 }}>{errorFecha}</p>}
         </div>
       )}
     </div>
