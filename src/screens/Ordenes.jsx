@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApi } from '../hooks/useApi';
-import { ESTADOS_ORDEN, ESTADO_COLORS } from '../utils/constants';
+import { ESTADOS_ORDEN, ESTADO_COLORS, formatFecha } from '../utils/constants';
 import Badge from '../components/Badge';
 import { Plus } from 'lucide-react';
 
@@ -26,7 +26,6 @@ export default function Ordenes() {
         </button>
       </div>
 
-      {/* Filtros */}
       <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 8, marginBottom: 16 }}>
         {FILTROS.map(f => (
           <button key={f} onClick={() => setFiltro(f)} style={{
@@ -49,7 +48,8 @@ export default function Ordenes() {
               <div>
                 <div style={{ fontWeight: 600 }}>{o.canalNombre}</div>
                 <div style={{ fontSize: 12, color: 'var(--text2)', marginTop: 2 }}>
-                  {o.fecha} {o.fechaDespacho ? `· Despacho: ${o.fechaDespacho}` : ''}
+                  {formatFecha(o.fecha)}
+                  {o.fechaDespacho ? ` · Despacho: ${formatFecha(o.fechaDespacho)}` : ''}
                 </div>
                 <div style={{ fontSize: 13, color: 'var(--success)', marginTop: 4 }}>
                   ${Number(o.total || 0).toFixed(2)}
