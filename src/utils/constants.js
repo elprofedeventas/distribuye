@@ -29,3 +29,8 @@ export const USUARIOS = [
   { id: 'u2', nombre: 'Vendedor', rol: ROLES.VENDEDOR, pin: '2222' },
   { id: 'u3', nombre: 'Despachador', rol: ROLES.DESPACHADOR, pin: '3333' },
 ];
+
+export const formatFecha = (fecha) => {
+  if (!fecha) return '';
+  return String(fecha).split('T')[0];
+};
