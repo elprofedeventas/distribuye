@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useApi } from '../hooks/useApi';
-import { ESTADO_COLORS, ROLES, formatFecha } from '../utils/constants';
+import { ESTADO_COLORS, ESTADO_LABELS, ROLES, formatFecha } from '../utils/constants';
 import { useApp } from '../context/AppContext';
 import Badge from '../components/Badge';
 import { ArrowLeft, Truck, CalendarCheck, AlertTriangle } from 'lucide-react';
@@ -67,7 +67,7 @@ export default function OrdenDetalle() {
           )}
           {orden.canalNombre}
         </h1>
-        <Badge label={orden.estado} color={ESTADO_COLORS[orden.estado] || '#94a3b8'} />
+        <Badge label={ESTADO_LABELS[orden.estado] || orden.estado} color={ESTADO_COLORS[orden.estado] || '#94a3b8'} />
       </div>
 
       {incidenciasAbiertas.length > 0 && (
