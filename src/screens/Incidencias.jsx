@@ -62,7 +62,10 @@ export default function Incidencias() {
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         {visibles.map(i => (
           <div key={i.id} className="card"
-            style={{ borderColor: i.estado === 'ABIERTA' ? 'var(--danger)' : 'var(--border)', cursor: i.estado === 'ABIERTA' ? 'pointer' : 'default' }}
+            style={{
+              borderColor: i.estado === 'ABIERTA' ? 'var(--danger)' : 'var(--border)',
+              cursor: i.estado === 'ABIERTA' ? 'pointer' : 'default'
+            }}
             onClick={() => i.estado === 'ABIERTA' && (setModal(i), setNotas(i.notas || ''))}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
               <div style={{ flex: 1 }}>
@@ -71,6 +74,16 @@ export default function Incidencias() {
                     ? <AlertTriangle size={14} color="var(--danger)" />
                     : <CheckCircle size={14} color="var(--success)" />}
                   <span style={{ fontWeight: 600, fontSize: 13 }}>{i.canalNombre}</span>
+                  {i.tipo && (
+                    <span style={{
+                      fontSize: 10, fontWeight: 600, padding: '1px 6px', borderRadius: 4,
+                      background: i.tipo === 'DESPACHO' ? 'var(--purple)22' : 'var(--warning)22',
+                      color: i.tipo === 'DESPACHO' ? 'var(--purple)' : 'var(--warning)',
+                      border: `1px solid ${i.tipo === 'DESPACHO' ? 'var(--purple)' : 'var(--warning)'}44`,
+                    }}>
+                      {i.tipo === 'DESPACHO' ? 'Despacho' : 'Entrega'}
+                    </span>
+                  )}
                 </div>
                 <div style={{ fontSize: 13 }}>{i.nombre}</div>
                 <div style={{ fontSize: 12, color: 'var(--text2)', marginTop: 4 }}>
