@@ -69,9 +69,9 @@ export default function NuevaOrden() {
       <h1 className="page-title">Nueva Orden</h1>
 
       <div className="form-group">
-        <label>Canal *</label>
+        <label>Cliente *</label>
         <select value={canalId} onChange={e => setCanalId(e.target.value)}>
-          <option value="">— Seleccionar canal —</option>
+          <option value="">— Seleccionar cliente —</option>
           {canales.map(c => (
             <option key={c.id} value={c.id}>
               {c.nombre} {c.diaSemana ? `(${c.diaSemana})` : ''}
