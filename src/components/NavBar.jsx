@@ -8,7 +8,7 @@ import {
 
 const navItems = [
   { path: '/', label: 'Dashboard', icon: LayoutDashboard, roles: null },
-  { path: '/canales', label: 'Canales', icon: Users, roles: [ROLES.ADMIN, ROLES.VENDEDOR] },
+  { path: '/canales', label: 'Clientes', icon: Users, roles: [ROLES.ADMIN, ROLES.VENDEDOR] },
   { path: '/productos', label: 'Productos', icon: Package, roles: [ROLES.ADMIN] },
   { path: '/inventario', label: 'Inventario', icon: Warehouse, roles: [ROLES.ADMIN] },
   { path: '/ordenes', label: 'Órdenes', icon: ClipboardList, roles: [ROLES.ADMIN, ROLES.VENDEDOR] },
