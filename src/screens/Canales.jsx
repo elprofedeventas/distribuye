@@ -32,11 +32,11 @@ export default function Canales() {
   return (
     <div className="page">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-        <h1 className="page-title" style={{ margin: 0 }}>Canales</h1>
+        <h1 className="page-title" style={{ margin: 0 }}>Clientes</h1>
         <button className="btn btn-primary" onClick={openNew}><Plus size={16} /> Nuevo</button>
       </div>
 
-      {canales.length === 0 && !loading && <p className="empty">Sin canales registrados</p>}
+      {canales.length === 0 && !loading && <p className="empty">Sin clientes registrados</p>}
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         {canales.map(c => (
@@ -55,7 +55,7 @@ export default function Canales() {
       </div>
 
       {modal && (
-        <Modal title={editId ? 'Editar Canal' : 'Nuevo Canal'} onClose={() => setModal(false)}>
+        <Modal title={editId ? 'Editar Cliente' : 'Nuevo Cliente'} onClose={() => setModal(false)}>
           <div className="form-group"><label>Nombre / Tienda *</label>
             <input value={form.nombre} onChange={e => set('nombre', e.target.value)} /></div>
           <div className="form-group"><label>RUC / Código</label>
@@ -75,7 +75,7 @@ export default function Canales() {
             </select>
           </div>
           <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }} onClick={save}>
-            {editId ? 'Guardar cambios' : 'Crear canal'}
+            {editId ? 'Guardar cambios' : 'Crear cliente'}
           </button>
         </Modal>
       )}
