@@ -8,6 +8,8 @@ const empty = {
   contacto: '', whatsapp: '', zona: '', ciudad: '', tipoCliente: ''
 };
 
+const str = (v) => (v === undefined || v === null) ? '' : String(v);
+
 export default function Canales() {
   const { call, loading } = useApi();
   const [canales, setCanales] = useState([]);
@@ -37,14 +39,15 @@ export default function Canales() {
   };
 
   const tiposCliente = config.tipoCliente || [];
+  const ciudades = config.ciudades || [];
 
   const visibles = canales.filter(c => {
     if (!busqueda) return true;
     const q = busqueda.toLowerCase();
     return (
-      (c.nombre || '').toLowerCase().includes(q) ||
-      (c.ruc || '').toLowerCase().includes(q) ||
-      (c.contacto || '').toLowerCase().includes(q)
+      str(c.nombre).toLowerCase().includes(q) ||
+      str(c.ruc).toLowerCase().includes(q) ||
+      str(c.contacto).toLowerCase().includes(q)
     );
   });
 
@@ -55,7 +58,6 @@ export default function Canales() {
         <button className="btn btn-primary" onClick={openNew}><Plus size={16} /> Nuevo</button>
       </div>
 
-      {/* Búsqueda */}
       <div style={{ position: 'relative', marginBottom: 16 }}>
         <Search size={16} style={{
           position: 'absolute', left: 12, top: '50%',
@@ -80,24 +82,24 @@ export default function Canales() {
           <div key={c.id} className="card"
             style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
             <div>
-              <div style={{ fontWeight: 600 }}>{c.nombre}</div>
+              <div style={{ fontWeight: 600 }}>{str(c.nombre)}</div>
               {c.tipoCliente && (
                 <span style={{
                   fontSize: 11, fontWeight: 600, padding: '1px 8px', borderRadius: 4,
                   background: 'var(--primary)22', color: 'var(--primary)',
                   border: '1px solid var(--primary)44', marginTop: 4, display: 'inline-block',
                 }}>
-                  {c.tipoCliente}
+                  {str(c.tipoCliente)}
                 </span>
               )}
               <div style={{ fontSize: 12, color: 'var(--text2)', marginTop: 4 }}>
-                {c.ruc && `RUC: ${c.ruc}`}
+                {c.ruc ? `RUC: ${str(c.ruc)}` : ''}
                 {c.ruc && c.ciudad ? ' · ' : ''}
-                {c.ciudad}
+                {str(c.ciudad)}
               </div>
-              <div style={{ fontSize: 12, color: 'var(--text2)' }}>{c.direccion}</div>
-              {c.telefono && <div style={{ fontSize: 12, color: 'var(--text2)' }}>Tel: {c.telefono}</div>}
-              {c.whatsapp && <div style={{ fontSize: 12, color: 'var(--success)' }}>📱 {c.whatsapp}</div>}
+              <div style={{ fontSize: 12, color: 'var(--text2)' }}>{str(c.direccion)}</div>
+              {c.telefono && <div style={{ fontSize: 12, color: 'var(--text2)' }}>Tel: {str(c.telefono)}</div>}
+              {c.whatsapp && <div style={{ fontSize: 12, color: 'var(--success)' }}>📱 {str(c.whatsapp)}</div>}
             </div>
             <button className="btn btn-ghost" style={{ padding: '6px 10px' }} onClick={() => openEdit(c)}>
               <Pencil size={14} />
@@ -120,12 +122,15 @@ export default function Canales() {
             <label>Tipo de cliente</label>
             <select value={form.tipoCliente} onChange={e => set('tipoCliente', e.target.value)}>
               <option value="">— Seleccionar —</option>
-              {tiposCliente.map(t => <option key={t} value={t}>{t}</option>)}
+              {tiposCliente.map(t => <option key={t} value={t}>{str(t)}</option>)}
             </select>
           </div>
           <div className="form-group">
             <label>Ciudad</label>
-            <input value={form.ciudad} onChange={e => set('ciudad', e.target.value)} />
+            <select value={form.ciudad} onChange={e => set('ciudad', e.target.value)}>
+              <option value="">— Seleccionar —</option>
+              {ciudades.map(c => <option key={c} value={c}>{str(c)}</option>)}
+            </select>
           </div>
           <div className="form-group">
             <label>Dirección</label>
