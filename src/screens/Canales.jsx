@@ -1,19 +1,26 @@
 import { useEffect, useState } from 'react';
 import { useApi } from '../hooks/useApi';
-import { DIAS_SEMANA } from '../utils/constants';
 import Modal from '../components/Modal';
-import { Plus, Pencil } from 'lucide-react';
+import { Plus, Pencil, Search } from 'lucide-react';
 
-const empty = { nombre: '', ruc: '', direccion: '', contacto: '', whatsapp: '', zona: '', diaSemana: '' };
+const empty = {
+  nombre: '', ruc: '', direccion: '', telefono: '',
+  contacto: '', whatsapp: '', zona: '', ciudad: '', tipoCliente: ''
+};
 
 export default function Canales() {
   const { call, loading } = useApi();
   const [canales, setCanales] = useState([]);
+  const [config, setConfig] = useState({});
   const [modal, setModal] = useState(false);
   const [form, setForm] = useState(empty);
   const [editId, setEditId] = useState(null);
+  const [busqueda, setBusqueda] = useState('');
 
-  const load = () => call('getCanales').then(d => setCanales(d || []));
+  const load = () => {
+    call('getCanales').then(d => setCanales(d || []));
+    call('getConfiguracion').then(d => setConfig(d || {}));
+  };
   useEffect(() => { load(); }, []);
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
@@ -29,6 +36,18 @@ export default function Canales() {
     load();
   };
 
+  const tiposCliente = config.tipoCliente || [];
+
+  const visibles = canales.filter(c => {
+    if (!busqueda) return true;
+    const q = busqueda.toLowerCase();
+    return (
+      (c.nombre || '').toLowerCase().includes(q) ||
+      (c.ruc || '').toLowerCase().includes(q) ||
+      (c.contacto || '').toLowerCase().includes(q)
+    );
+  });
+
   return (
     <div className="page">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
@@ -36,15 +55,48 @@ export default function Canales() {
         <button className="btn btn-primary" onClick={openNew}><Plus size={16} /> Nuevo</button>
       </div>
 
-      {canales.length === 0 && !loading && <p className="empty">Sin clientes registrados</p>}
+      {/* Búsqueda */}
+      <div style={{ position: 'relative', marginBottom: 16 }}>
+        <Search size={16} style={{
+          position: 'absolute', left: 12, top: '50%',
+          transform: 'translateY(-50%)', color: 'var(--text2)',
+        }} />
+        <input
+          placeholder="Buscar por nombre, RUC o contacto..."
+          value={busqueda}
+          onChange={e => setBusqueda(e.target.value)}
+          style={{ paddingLeft: 36 }}
+        />
+      </div>
+
+      {visibles.length === 0 && !loading && (
+        <p className="empty">
+          {busqueda ? 'Sin resultados para esa búsqueda' : 'Sin clientes registrados'}
+        </p>
+      )}
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-        {canales.map(c => (
-          <div key={c.id} className="card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        {visibles.map(c => (
+          <div key={c.id} className="card"
+            style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
             <div>
               <div style={{ fontWeight: 600 }}>{c.nombre}</div>
-              <div style={{ fontSize: 12, color: 'var(--text2)', marginTop: 2 }}>{c.zona} · {c.diaSemana}</div>
+              {c.tipoCliente && (
+                <span style={{
+                  fontSize: 11, fontWeight: 600, padding: '1px 8px', borderRadius: 4,
+                  background: 'var(--primary)22', color: 'var(--primary)',
+                  border: '1px solid var(--primary)44', marginTop: 4, display: 'inline-block',
+                }}>
+                  {c.tipoCliente}
+                </span>
+              )}
+              <div style={{ fontSize: 12, color: 'var(--text2)', marginTop: 4 }}>
+                {c.ruc && `RUC: ${c.ruc}`}
+                {c.ruc && c.ciudad ? ' · ' : ''}
+                {c.ciudad}
+              </div>
               <div style={{ fontSize: 12, color: 'var(--text2)' }}>{c.direccion}</div>
+              {c.telefono && <div style={{ fontSize: 12, color: 'var(--text2)' }}>Tel: {c.telefono}</div>}
               {c.whatsapp && <div style={{ fontSize: 12, color: 'var(--success)' }}>📱 {c.whatsapp}</div>}
             </div>
             <button className="btn btn-ghost" style={{ padding: '6px 10px' }} onClick={() => openEdit(c)}>
@@ -56,25 +108,47 @@ export default function Canales() {
 
       {modal && (
         <Modal title={editId ? 'Editar Cliente' : 'Nuevo Cliente'} onClose={() => setModal(false)}>
-          <div className="form-group"><label>Nombre / Tienda *</label>
-            <input value={form.nombre} onChange={e => set('nombre', e.target.value)} /></div>
-          <div className="form-group"><label>RUC / Código</label>
-            <input value={form.ruc} onChange={e => set('ruc', e.target.value)} /></div>
-          <div className="form-group"><label>Dirección de entrega</label>
-            <input value={form.direccion} onChange={e => set('direccion', e.target.value)} /></div>
-          <div className="form-group"><label>Contacto</label>
-            <input value={form.contacto} onChange={e => set('contacto', e.target.value)} /></div>
-          <div className="form-group"><label>WhatsApp</label>
-            <input value={form.whatsapp} onChange={e => set('whatsapp', e.target.value)} inputMode="numeric" /></div>
-          <div className="form-group"><label>Zona</label>
-            <input value={form.zona} onChange={e => set('zona', e.target.value)} /></div>
-          <div className="form-group"><label>Día de visita</label>
-            <select value={form.diaSemana} onChange={e => set('diaSemana', e.target.value)}>
+          <div className="form-group">
+            <label>Nombre *</label>
+            <input value={form.nombre} onChange={e => set('nombre', e.target.value)} />
+          </div>
+          <div className="form-group">
+            <label>RUC</label>
+            <input value={form.ruc} onChange={e => set('ruc', e.target.value)} />
+          </div>
+          <div className="form-group">
+            <label>Tipo de cliente</label>
+            <select value={form.tipoCliente} onChange={e => set('tipoCliente', e.target.value)}>
               <option value="">— Seleccionar —</option>
-              {DIAS_SEMANA.map(d => <option key={d} value={d}>{d}</option>)}
+              {tiposCliente.map(t => <option key={t} value={t}>{t}</option>)}
             </select>
           </div>
-          <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }} onClick={save}>
+          <div className="form-group">
+            <label>Ciudad</label>
+            <input value={form.ciudad} onChange={e => set('ciudad', e.target.value)} />
+          </div>
+          <div className="form-group">
+            <label>Dirección</label>
+            <input value={form.direccion} onChange={e => set('direccion', e.target.value)} />
+          </div>
+          <div className="form-group">
+            <label>Teléfono</label>
+            <input value={form.telefono} onChange={e => set('telefono', e.target.value)} inputMode="numeric" />
+          </div>
+          <div className="form-group">
+            <label>Contacto</label>
+            <input value={form.contacto} onChange={e => set('contacto', e.target.value)} />
+          </div>
+          <div className="form-group">
+            <label>WhatsApp</label>
+            <input value={form.whatsapp} onChange={e => set('whatsapp', e.target.value)} inputMode="numeric" />
+          </div>
+          <div className="form-group">
+            <label>Zona</label>
+            <input value={form.zona} onChange={e => set('zona', e.target.value)} />
+          </div>
+          <button className="btn btn-primary"
+            style={{ width: '100%', justifyContent: 'center' }} onClick={save}>
             {editId ? 'Guardar cambios' : 'Crear cliente'}
           </button>
         </Modal>
