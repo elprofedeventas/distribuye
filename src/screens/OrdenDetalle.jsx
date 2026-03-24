@@ -4,6 +4,7 @@ import { useApi } from '../hooks/useApi';
 import { ESTADO_COLORS, ESTADO_LABELS, ROLES, formatFecha } from '../utils/constants';
 import { useApp } from '../context/AppContext';
 import Badge from '../components/Badge';
+import Modal from '../components/Modal';
 import { ArrowLeft, Truck, CalendarCheck, AlertTriangle, Plus, Trash2 } from 'lucide-react';
 
 export default function OrdenDetalle() {
@@ -20,6 +21,7 @@ export default function OrdenDetalle() {
   const [productos, setProductos] = useState([]);
   const [lineas, setLineas] = useState([]);
   const [saving, setSaving] = useState(false);
+  const [modalStock, setModalStock] = useState(null); // lista de productos con stock bajo
 
   const hoy = formatFecha(new Date().toISOString());
 
@@ -65,7 +67,6 @@ export default function OrdenDetalle() {
     if (lineas.length === 0) return;
     setSaving(true);
     try {
-      // Actualizar líneas existentes y agregar nuevas
       for (const linea of lineas) {
         const p = linea.productoId ? getProducto(linea.productoId) : null;
         if (linea.id) {
@@ -88,7 +89,6 @@ export default function OrdenDetalle() {
           });
         }
       }
-      // Recalcular total
       const nuevoTotal = lineas.reduce((sum, l) => {
         const p = l.id
           ? detalle.find(d => d.id === l.id)
@@ -104,7 +104,34 @@ export default function OrdenDetalle() {
     }
   };
 
+  const intentarConfirmar = async () => {
+    // Revisar inventario antes de confirmar
+    const inventario = await call('getInventario');
+    const problemas = [];
+
+    detalle.forEach(d => {
+      const inv = (inventario || []).find(i => i.productoId === d.productoId);
+      const stockActual = inv ? Number(inv.stockActual) : 0;
+      if (stockActual < Number(d.cantPedida)) {
+        problemas.push({
+          nombre: d.nombre,
+          sku: d.sku,
+          cantPedida: d.cantPedida,
+          stockActual,
+          diferencia: Number(d.cantPedida) - stockActual,
+        });
+      }
+    });
+
+    if (problemas.length > 0) {
+      setModalStock(problemas);
+    } else {
+      await confirmar();
+    }
+  };
+
   const confirmar = async () => {
+    setModalStock(null);
     await call('updateOrdenEstado', { id, estado: 'CONFIRMADA' });
     load();
   };
@@ -151,7 +178,8 @@ export default function OrdenDetalle() {
                 <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
                   <div style={{ flex: 1 }}>
                     {l.id ? (
-                      <div style={{ fontWeight: 500, marginBottom: 8 }}>{l.nombre}
+                      <div style={{ fontWeight: 500, marginBottom: 8 }}>
+                        {l.nombre}
                         <span style={{ fontSize: 12, color: 'var(--text2)', marginLeft: 6 }}>({l.sku})</span>
                       </div>
                     ) : (
@@ -179,9 +207,11 @@ export default function OrdenDetalle() {
                         onChange={e => setLinea(i, 'cantPedida', e.target.value)}
                         style={{ width: 80 }} />
                       {p && <span style={{ fontSize: 12, color: 'var(--text2)' }}>{p.unidad || l.unidad}</span>}
-                      {p && <span style={{ fontSize: 13, color: 'var(--success)', marginLeft: 'auto' }}>
-                        ${(Number(p.precio || l.precio) * Number(l.cantPedida)).toFixed(2)}
-                      </span>}
+                      {p && (
+                        <span style={{ fontSize: 13, color: 'var(--success)', marginLeft: 'auto' }}>
+                          ${(Number(p.precio || l.precio) * Number(l.cantPedida)).toFixed(2)}
+                        </span>
+                      )}
                     </div>
                   </div>
                   {!l.id && (
@@ -318,7 +348,7 @@ export default function OrdenDetalle() {
       {puedeConfirmar && (
         <button className="btn btn-primary"
           style={{ width: '100%', justifyContent: 'center', marginBottom: 10 }}
-          onClick={confirmar}>
+          onClick={intentarConfirmar}>
           <CalendarCheck size={16} /> Confirmar orden
         </button>
       )}
@@ -336,6 +366,41 @@ export default function OrdenDetalle() {
           </div>
           {errorFecha && <p style={{ color: 'var(--danger)', fontSize: 12 }}>{errorFecha}</p>}
         </div>
+      )}
+
+      {/* Modal advertencia de stock */}
+      {modalStock && (
+        <Modal title="⚠️ Stock insuficiente" onClose={() => setModalStock(null)}>
+          <p style={{ fontSize: 13, color: 'var(--text2)', marginBottom: 16 }}>
+            Los siguientes productos no tienen stock suficiente. Puedes confirmar igual y reponer antes del despacho.
+          </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
+            {modalStock.map((p, i) => (
+              <div key={i} className="card" style={{ borderColor: 'var(--warning)' }}>
+                <div style={{ fontWeight: 500 }}>{p.nombre}
+                  <span style={{ fontSize: 12, color: 'var(--text2)', marginLeft: 6 }}>({p.sku})</span>
+                </div>
+                <div style={{ fontSize: 12, marginTop: 4, display: 'flex', gap: 16 }}>
+                  <span style={{ color: 'var(--text2)' }}>Pedido: <strong>{p.cantPedida}</strong></span>
+                  <span style={{ color: p.stockActual === 0 ? 'var(--danger)' : 'var(--warning)' }}>
+                    Stock actual: <strong>{p.stockActual}</strong>
+                  </span>
+                  <span style={{ color: 'var(--danger)' }}>Faltan: <strong>{p.diferencia}</strong></span>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div style={{ display: 'flex', gap: 10 }}>
+            <button className="btn btn-ghost" style={{ flex: 1, justifyContent: 'center' }}
+              onClick={() => setModalStock(null)}>
+              Cancelar
+            </button>
+            <button className="btn btn-primary" style={{ flex: 1, justifyContent: 'center' }}
+              onClick={confirmar}>
+              <CalendarCheck size={16} /> Confirmar igual
+            </button>
+          </div>
+        </Modal>
       )}
     </div>
   );
