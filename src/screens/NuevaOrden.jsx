@@ -4,18 +4,17 @@ import { useApi } from '../hooks/useApi';
 import { useApp } from '../context/AppContext';
 import { formatFecha } from '../utils/constants';
 import { Trash2, Plus } from 'lucide-react';
+import LoadingButton from '../components/LoadingButton';
 
 export default function NuevaOrden() {
   const { call } = useApi();
   const { usuario } = useApp();
   const navigate = useNavigate();
-
   const [canales, setCanales] = useState([]);
   const [productos, setProductos] = useState([]);
   const [canalId, setCanalId] = useState('');
   const [notas, setNotas] = useState('');
   const [lineas, setLineas] = useState([]);
-  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     call('getCanales').then(d => setCanales(d || []));
@@ -35,33 +34,22 @@ export default function NuevaOrden() {
   const save = async () => {
     if (!canalId || lineas.length === 0) return;
     const canal = canales.find(c => c.id === canalId);
-    setSaving(true);
-    try {
-      const detalle = lineas.map(l => {
-        const p = getProducto(l.productoId);
-        return {
-          productoId: p.id,
-          sku: p.sku,
-          nombre: p.nombre,
-          unidad: p.unidad,
-          precio: p.precio,
-          cantPedida: Number(l.cantidad),
-        };
-      });
-      await call('createOrden', {
-        orden: {
-          canalId,
-          canalNombre: canal.nombre,
-          fecha: formatFecha(new Date().toISOString()),
-          notas,
-          creadoPor: usuario?.nombre,
-        },
-        detalle,
-      });
-      navigate('/ordenes');
-    } finally {
-      setSaving(false);
-    }
+    const detalle = lineas.map(l => {
+      const p = getProducto(l.productoId);
+      return {
+        productoId: p.id, sku: p.sku, nombre: p.nombre,
+        unidad: p.unidad, precio: p.precio, cantPedida: Number(l.cantidad),
+      };
+    });
+    await call('createOrden', {
+      orden: {
+        canalId, canalNombre: canal.nombre,
+        fecha: formatFecha(new Date().toISOString()),
+        notas, creadoPor: usuario?.nombre,
+      },
+      detalle,
+    });
+    navigate('/ordenes');
   };
 
   return (
@@ -138,11 +126,12 @@ export default function NuevaOrden() {
         </div>
       )}
 
-      <button className="btn btn-primary"
-        style={{ width: '100%', justifyContent: 'center', opacity: (!canalId || lineas.length === 0 || saving) ? 0.5 : 1 }}
-        onClick={save} disabled={!canalId || lineas.length === 0 || saving}>
-        {saving ? 'Guardando...' : 'Crear orden'}
-      </button>
+      <LoadingButton
+        onClick={save}
+        style={{ width: '100%', justifyContent: 'center' }}
+        disabled={!canalId || lineas.length === 0}>
+        Crear orden
+      </LoadingButton>
     </div>
   );
 }

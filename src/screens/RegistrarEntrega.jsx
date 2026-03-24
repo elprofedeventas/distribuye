@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useApi } from '../hooks/useApi';
 import { CheckCircle, AlertTriangle } from 'lucide-react';
+import LoadingButton from '../components/LoadingButton';
 
 export default function RegistrarEntrega() {
   const { id } = useParams();
@@ -11,7 +12,6 @@ export default function RegistrarEntrega() {
   const [detalle, setDetalle] = useState([]);
   const [cantidades, setCantidades] = useState({});
   const [notas, setNotas] = useState('');
-  const [saving, setSaving] = useState(false);
   const [done, setDone] = useState(false);
   const [incidencias, setIncidencias] = useState(0);
 
@@ -32,31 +32,25 @@ export default function RegistrarEntrega() {
   }, [id]);
 
   const diferenciaLinea = (d) => Number(d.cantPedida) - Number(cantidades[d.id] || 0);
-
   const totalDiferencias = detalle.filter(d => diferenciaLinea(d) !== 0).length;
 
   const confirmar = async () => {
-    setSaving(true);
-    try {
-      const detalleEntrega = detalle.map(d => ({
-        id: d.id,
-        productoId: d.productoId,
-        sku: d.sku,
-        nombre: d.nombre,
-        cantPedida: Number(d.cantPedida),
-        cantEntregada: Number(cantidades[d.id] || 0),
-      }));
-      const result = await call('registrarEntrega', {
-        ordenId: id,
-        canalNombre: orden.canalNombre,
-        notas,
-        detalle: detalleEntrega,
-      });
-      setIncidencias(result.incidenciasCreadas || 0);
-      setDone(true);
-    } finally {
-      setSaving(false);
-    }
+    const detalleEntrega = detalle.map(d => ({
+      id: d.id,
+      productoId: d.productoId,
+      sku: d.sku,
+      nombre: d.nombre,
+      cantPedida: Number(d.cantPedida),
+      cantEntregada: Number(cantidades[d.id] || 0),
+    }));
+    const result = await call('registrarEntrega', {
+      ordenId: id,
+      canalNombre: orden.canalNombre,
+      notas,
+      detalle: detalleEntrega,
+    });
+    setIncidencias(result.incidenciasCreadas || 0);
+    setDone(true);
   };
 
   if (done) {
@@ -104,6 +98,11 @@ export default function RegistrarEntrega() {
       </div>
 
       <div className="card" style={{ marginBottom: 16 }}>
+        {orden.numeroOrden && (
+          <div style={{ fontSize: 11, color: 'var(--primary)', fontWeight: 600, marginBottom: 4 }}>
+            {orden.numeroOrden}
+          </div>
+        )}
         <div style={{ fontWeight: 600 }}>{orden.canalNombre}</div>
         <div style={{ fontSize: 12, color: 'var(--text2)' }}>{orden.fecha}</div>
       </div>
@@ -161,11 +160,12 @@ export default function RegistrarEntrega() {
           placeholder="Motivo de diferencia, observaciones..." />
       </div>
 
-      <button className="btn btn-success"
-        style={{ width: '100%', justifyContent: 'center', opacity: saving ? 0.5 : 1 }}
-        onClick={confirmar} disabled={saving}>
-        <CheckCircle size={16} /> {saving ? 'Guardando...' : 'Confirmar entrega'}
-      </button>
+      <LoadingButton
+        onClick={confirmar}
+        className="btn btn-success"
+        style={{ width: '100%', justifyContent: 'center' }}>
+        <CheckCircle size={16} style={{ marginRight: 6 }} /> Confirmar entrega
+      </LoadingButton>
     </div>
   );
 }

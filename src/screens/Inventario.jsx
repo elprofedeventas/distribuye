@@ -3,6 +3,7 @@ import { useApi } from '../hooks/useApi';
 import { useApp } from '../context/AppContext';
 import { ROLES } from '../utils/constants';
 import Modal from '../components/Modal';
+import LoadingButton from '../components/LoadingButton';
 import { AlertTriangle, Plus, Minus, RefreshCw } from 'lucide-react';
 
 export default function Inventario() {
@@ -50,7 +51,9 @@ export default function Inventario() {
             </span>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
-            {alertas.map(i => <ItemCard key={i.id} i={i} onAjustar={setModal} soloLectura={soloLectura} />)}
+            {alertas.map(i => (
+              <ItemCard key={i.id} i={i} onAjustar={setModal} soloLectura={soloLectura} />
+            ))}
           </div>
         </>
       )}
@@ -61,7 +64,9 @@ export default function Inventario() {
             Stock normal
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {normales.map(i => <ItemCard key={i.id} i={i} onAjustar={setModal} soloLectura={soloLectura} />)}
+            {normales.map(i => (
+              <ItemCard key={i.id} i={i} onAjustar={setModal} soloLectura={soloLectura} />
+            ))}
           </div>
         </>
       )}
@@ -80,9 +85,9 @@ export default function Inventario() {
             <label>{modal.tipo === 'ajuste' ? 'Nuevo stock total' : 'Cantidad'}</label>
             <input type="number" value={cantidad} onChange={e => setCantidad(e.target.value)} autoFocus />
           </div>
-          <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }} onClick={ajustar}>
+          <LoadingButton onClick={ajustar} style={{ width: '100%', justifyContent: 'center' }}>
             Confirmar
-          </button>
+          </LoadingButton>
         </Modal>
       )}
     </div>

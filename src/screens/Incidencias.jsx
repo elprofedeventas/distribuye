@@ -4,6 +4,7 @@ import { useApp } from '../context/AppContext';
 import { ROLES } from '../utils/constants';
 import { AlertTriangle, CheckCircle } from 'lucide-react';
 import Modal from '../components/Modal';
+import LoadingButton from '../components/LoadingButton';
 
 export default function Incidencias() {
   const { call, loading } = useApi();
@@ -21,7 +22,6 @@ export default function Incidencias() {
     call('getOrdenes'),
   ]).then(([incs, ords]) => {
     let incsFiltradas = incs || [];
-    // Despachador solo ve sus propias incidencias (las que él generó al despachar)
     if (usuario?.rol === ROLES.DESPACHADOR) {
       incsFiltradas = incsFiltradas.filter(i => i.tipo === 'DESPACHO' || i.tipo === 'ENTREGA');
     }
@@ -161,10 +161,12 @@ export default function Incidencias() {
             <textarea value={notas} onChange={e => setNotas(e.target.value)} rows={3}
               placeholder="Resolución, acuerdo, motivo..." />
           </div>
-          <button className="btn btn-success" style={{ width: '100%', justifyContent: 'center' }}
-            onClick={cerrar}>
-            <CheckCircle size={16} /> Marcar como cerrada
-          </button>
+          <LoadingButton
+            onClick={cerrar}
+            className="btn btn-success"
+            style={{ width: '100%', justifyContent: 'center' }}>
+            <CheckCircle size={16} style={{ marginRight: 6 }} /> Marcar como cerrada
+          </LoadingButton>
         </Modal>
       )}
     </div>

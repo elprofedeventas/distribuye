@@ -4,6 +4,7 @@ import { useApi } from '../hooks/useApi';
 import { useApp } from '../context/AppContext';
 import { ROLES, ESTADO_COLORS, formatFecha } from '../utils/constants';
 import Badge from '../components/Badge';
+import LoadingButton from '../components/LoadingButton';
 import { Truck, PackageCheck, AlertTriangle } from 'lucide-react';
 
 export default function ColaDespacho() {
@@ -19,9 +20,7 @@ export default function ColaDespacho() {
 
   const load = async () => {
     const data = await call('getOrdenes');
-    setOrdenes((data || []).filter(o =>
-      ['PROGRAMADA', 'DESPACHADA'].includes(o.estado)
-    ));
+    setOrdenes((data || []).filter(o => ['PROGRAMADA', 'DESPACHADA'].includes(o.estado)));
   };
 
   useEffect(() => { load(); }, []);
@@ -111,11 +110,9 @@ export default function ColaDespacho() {
           })}
         </div>
 
-        <button className="btn btn-primary"
-          style={{ width: '100%', justifyContent: 'center' }}
-          onClick={confirmarDespacho}>
-          <Truck size={16} /> Confirmar despacho
-        </button>
+        <LoadingButton onClick={confirmarDespacho} style={{ width: '100%', justifyContent: 'center' }}>
+          <Truck size={16} style={{ marginRight: 6 }} /> Confirmar despacho
+        </LoadingButton>
       </div>
     );
   }
@@ -124,9 +121,7 @@ export default function ColaDespacho() {
     <div className="page">
       <h1 className="page-title">Despacho</h1>
 
-      {ordenes.length === 0 && !loading && (
-        <p className="empty">Sin órdenes pendientes</p>
-      )}
+      {ordenes.length === 0 && !loading && <p className="empty">Sin órdenes pendientes</p>}
 
       {porDespachar.length > 0 && (
         <>
@@ -234,24 +229,23 @@ function OrdenCard({ o, onDespachar, onEntrega, call, navigate, soloLectura }) {
         </div>
       )}
 
-      {/* Botones solo para Despachador */}
       {!soloLectura && (onDespachar || onEntrega) && (
         <div style={{ display: 'flex', gap: 8 }}>
           {onDespachar && (
-            <button className="btn btn-primary" style={{ flex: 1, justifyContent: 'center' }}
-              onClick={onDespachar}>
-              <Truck size={14} /> Despachar
-            </button>
+            <LoadingButton onClick={onDespachar} style={{ flex: 1, justifyContent: 'center' }}>
+              <Truck size={14} style={{ marginRight: 6 }} /> Despachar
+            </LoadingButton>
           )}
           {onEntrega && (
-            <button style={{
-              flex: 1, justifyContent: 'center',
-              display: 'inline-flex', alignItems: 'center', gap: 6,
-              padding: '10px 16px', borderRadius: 8, fontSize: 14, fontWeight: 500,
-              background: 'var(--warning)', color: '#fff', cursor: 'pointer', border: 'none',
-            }} onClick={onEntrega}>
-              <PackageCheck size={14} /> Registrar entrega
-            </button>
+            <LoadingButton
+              onClick={onEntrega}
+              className="btn"
+              style={{
+                flex: 1, justifyContent: 'center',
+                background: 'var(--warning)', color: '#fff',
+              }}>
+              <PackageCheck size={14} style={{ marginRight: 6 }} /> Registrar entrega
+            </LoadingButton>
           )}
         </div>
       )}

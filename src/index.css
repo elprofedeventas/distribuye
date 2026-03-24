@@ -78,3 +78,7 @@ input:focus, select:focus, textarea:focus {
 .form-group label { font-size: 12px; font-weight: 500; color: var(--text2); }
 
 .empty { text-align: center; color: var(--text2); padding: 40px 0; font-size: 14px; }
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}

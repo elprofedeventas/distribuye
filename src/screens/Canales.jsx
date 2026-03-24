@@ -3,6 +3,7 @@ import { useApi } from '../hooks/useApi';
 import { useApp } from '../context/AppContext';
 import { ROLES } from '../utils/constants';
 import Modal from '../components/Modal';
+import LoadingButton from '../components/LoadingButton';
 import { Plus, Pencil, Search } from 'lucide-react';
 
 const empty = {
@@ -144,9 +145,9 @@ export default function Canales() {
             <input value={form.whatsapp} onChange={e => set('whatsapp', e.target.value)} inputMode="numeric" /></div>
           <div className="form-group"><label>Zona</label>
             <input value={form.zona} onChange={e => set('zona', e.target.value)} /></div>
-          <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }} onClick={save}>
+          <LoadingButton onClick={save} style={{ width: '100%', justifyContent: 'center' }}>
             {editId ? 'Guardar cambios' : 'Crear cliente'}
-          </button>
+          </LoadingButton>
         </Modal>
       )}
     </div>

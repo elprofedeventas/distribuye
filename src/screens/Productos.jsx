@@ -3,6 +3,7 @@ import { useApi } from '../hooks/useApi';
 import { useApp } from '../context/AppContext';
 import { ROLES } from '../utils/constants';
 import Modal from '../components/Modal';
+import LoadingButton from '../components/LoadingButton';
 import { Plus, Pencil } from 'lucide-react';
 
 const empty = { sku: '', nombre: '', categoria: '', unidad: 'unid', precio: '', stockMinimo: '' };
@@ -91,9 +92,9 @@ export default function Productos() {
             <input type="number" value={form.precio} onChange={e => set('precio', e.target.value)} /></div>
           <div className="form-group"><label>Stock mínimo (alerta)</label>
             <input type="number" value={form.stockMinimo} onChange={e => set('stockMinimo', e.target.value)} /></div>
-          <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }} onClick={save}>
+          <LoadingButton onClick={save} style={{ width: '100%', justifyContent: 'center' }}>
             {editId ? 'Guardar cambios' : 'Crear producto'}
-          </button>
+          </LoadingButton>
         </Modal>
       )}
     </div>

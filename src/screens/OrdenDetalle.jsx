@@ -5,6 +5,7 @@ import { ESTADO_COLORS, ESTADO_LABELS, ROLES, formatFecha } from '../utils/const
 import { useApp } from '../context/AppContext';
 import Badge from '../components/Badge';
 import Modal from '../components/Modal';
+import LoadingButton from '../components/LoadingButton';
 import { ArrowLeft, Truck, CalendarCheck, AlertTriangle, Plus, Trash2 } from 'lucide-react';
 
 export default function OrdenDetalle() {
@@ -20,10 +21,10 @@ export default function OrdenDetalle() {
   const [editando, setEditando] = useState(false);
   const [productos, setProductos] = useState([]);
   const [lineas, setLineas] = useState([]);
-  const [saving, setSaving] = useState(false);
-  const [modalStock, setModalStock] = useState(null); // lista de productos con stock bajo
+  const [modalStock, setModalStock] = useState(null);
 
   const hoy = formatFecha(new Date().toISOString());
+  const soloLectura = usuario?.rol === ROLES.GERENCIA;
 
   const load = async () => {
     const [ordenes, det, incs] = await Promise.all([
@@ -44,90 +45,56 @@ export default function OrdenDetalle() {
     const prods = await call('getProductos');
     setProductos(prods || []);
     setLineas(detalle.map(d => ({
-      id: d.id,
-      productoId: d.productoId,
-      sku: d.sku,
-      nombre: d.nombre,
-      unidad: d.unidad,
-      precio: d.precio,
-      cantPedida: d.cantPedida,
+      id: d.id, productoId: d.productoId, sku: d.sku,
+      nombre: d.nombre, unidad: d.unidad, precio: d.precio, cantPedida: d.cantPedida,
     })));
     setEditando(true);
   };
 
   const getProducto = (pid) => productos.find(p => p.id === pid);
-
   const setLinea = (i, k, v) => setLineas(l => l.map((x, j) => j === i ? { ...x, [k]: v } : x));
-
   const addLinea = () => setLineas(l => [...l, { productoId: '', cantPedida: 1 }]);
-
   const removeLinea = (i) => setLineas(l => l.filter((_, j) => j !== i));
 
   const guardarEdicion = async () => {
     if (lineas.length === 0) return;
-    setSaving(true);
-    try {
-      for (const linea of lineas) {
-        const p = linea.productoId ? getProducto(linea.productoId) : null;
-        if (linea.id) {
-          await call('updateOrdenDetalle', {
-            id: linea.id,
-            cantPedida: Number(linea.cantPedida),
-          });
-        } else if (p) {
-          await call('createOrdenDetalle', {
-            ordenId: id,
-            productoId: p.id,
-            sku: p.sku,
-            nombre: p.nombre,
-            unidad: p.unidad,
-            precio: p.precio,
-            cantPedida: Number(linea.cantPedida),
-            cantDespachada: 0,
-            cantEntregada: 0,
-            diferencia: 0,
-          });
-        }
+    for (const linea of lineas) {
+      const p = linea.productoId ? getProducto(linea.productoId) : null;
+      if (linea.id) {
+        await call('updateOrdenDetalle', { id: linea.id, cantPedida: Number(linea.cantPedida) });
+      } else if (p) {
+        await call('createOrdenDetalle', {
+          ordenId: id, productoId: p.id, sku: p.sku, nombre: p.nombre,
+          unidad: p.unidad, precio: p.precio, cantPedida: Number(linea.cantPedida),
+          cantDespachada: 0, cantEntregada: 0, diferencia: 0,
+        });
       }
-      const nuevoTotal = lineas.reduce((sum, l) => {
-        const p = l.id
-          ? detalle.find(d => d.id === l.id)
-          : getProducto(l.productoId);
-        const precio = p?.precio || 0;
-        return sum + Number(precio) * Number(l.cantPedida);
-      }, 0);
-      await call('updateOrdenEstado', { id, total: nuevoTotal, estado: 'BORRADOR' });
-      setEditando(false);
-      load();
-    } finally {
-      setSaving(false);
     }
+    const nuevoTotal = lineas.reduce((sum, l) => {
+      const p = l.id ? detalle.find(d => d.id === l.id) : getProducto(l.productoId);
+      return sum + Number(p?.precio || 0) * Number(l.cantPedida);
+    }, 0);
+    await call('updateOrdenEstado', { id, total: nuevoTotal, estado: 'BORRADOR' });
+    setEditando(false);
+    load();
   };
 
   const intentarConfirmar = async () => {
-    // Revisar inventario antes de confirmar
     const inventario = await call('getInventario');
     const problemas = [];
-
     detalle.forEach(d => {
       const inv = (inventario || []).find(i => i.productoId === d.productoId);
       const stockActual = inv ? Number(inv.stockActual) : 0;
       if (stockActual < Number(d.cantPedida)) {
         problemas.push({
-          nombre: d.nombre,
-          sku: d.sku,
-          cantPedida: d.cantPedida,
-          stockActual,
+          nombre: d.nombre, sku: d.sku,
+          cantPedida: d.cantPedida, stockActual,
           diferencia: Number(d.cantPedida) - stockActual,
         });
       }
     });
-
-    if (problemas.length > 0) {
-      setModalStock(problemas);
-    } else {
-      await confirmar();
-    }
+    if (problemas.length > 0) setModalStock(problemas);
+    else await confirmar();
   };
 
   const confirmar = async () => {
@@ -146,12 +113,11 @@ export default function OrdenDetalle() {
 
   if (!orden) return <div className="page"><p className="empty">Cargando...</p></div>;
 
-  const puedeConfirmar = orden.estado === 'BORRADOR' && usuario?.rol !== ROLES.DESPACHADOR;
-  const puedeProgramar = orden.estado === 'CONFIRMADA' && usuario?.rol !== ROLES.DESPACHADOR;
-  const puedeEditar = orden.estado === 'BORRADOR' && usuario?.rol !== ROLES.DESPACHADOR;
+  const puedeConfirmar = !soloLectura && orden.estado === 'BORRADOR' && usuario?.rol !== ROLES.DESPACHADOR;
+  const puedeProgramar = !soloLectura && orden.estado === 'CONFIRMADA' && usuario?.rol !== ROLES.DESPACHADOR;
+  const puedeEditar = !soloLectura && orden.estado === 'BORRADOR' && usuario?.rol !== ROLES.DESPACHADOR;
   const incidenciasAbiertas = incidencias.filter(i => i.estado === 'ABIERTA');
 
-  // Vista edición
   if (editando) {
     return (
       <div className="page">
@@ -170,9 +136,7 @@ export default function OrdenDetalle() {
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 20 }}>
           {lineas.map((l, i) => {
-            const p = l.id
-              ? detalle.find(d => d.id === l.id)
-              : getProducto(l.productoId);
+            const p = l.id ? detalle.find(d => d.id === l.id) : getProducto(l.productoId);
             return (
               <div key={i} className="card">
                 <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
@@ -187,12 +151,9 @@ export default function OrdenDetalle() {
                         onChange={e => {
                           const prod = getProducto(e.target.value);
                           setLineas(ls => ls.map((x, j) => j === i ? {
-                            ...x,
-                            productoId: e.target.value,
-                            sku: prod?.sku || '',
-                            nombre: prod?.nombre || '',
-                            unidad: prod?.unidad || '',
-                            precio: prod?.precio || 0,
+                            ...x, productoId: e.target.value,
+                            sku: prod?.sku || '', nombre: prod?.nombre || '',
+                            unidad: prod?.unidad || '', precio: prod?.precio || 0,
                           } : x));
                         }}
                         style={{ marginBottom: 8 }}>
@@ -207,11 +168,9 @@ export default function OrdenDetalle() {
                         onChange={e => setLinea(i, 'cantPedida', e.target.value)}
                         style={{ width: 80 }} />
                       {p && <span style={{ fontSize: 12, color: 'var(--text2)' }}>{p.unidad || l.unidad}</span>}
-                      {p && (
-                        <span style={{ fontSize: 13, color: 'var(--success)', marginLeft: 'auto' }}>
-                          ${(Number(p.precio || l.precio) * Number(l.cantPedida)).toFixed(2)}
-                        </span>
-                      )}
+                      {p && <span style={{ fontSize: 13, color: 'var(--success)', marginLeft: 'auto' }}>
+                        ${(Number(p.precio || l.precio) * Number(l.cantPedida)).toFixed(2)}
+                      </span>}
                     </div>
                   </div>
                   {!l.id && (
@@ -225,16 +184,13 @@ export default function OrdenDetalle() {
           })}
         </div>
 
-        <button className="btn btn-primary"
-          style={{ width: '100%', justifyContent: 'center', opacity: saving ? 0.5 : 1 }}
-          onClick={guardarEdicion} disabled={saving}>
-          {saving ? 'Guardando...' : 'Guardar cambios'}
-        </button>
+        <LoadingButton onClick={guardarEdicion} style={{ width: '100%', justifyContent: 'center' }}>
+          Guardar cambios
+        </LoadingButton>
       </div>
     );
   }
 
-  // Vista normal
   return (
     <div className="page">
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
@@ -312,8 +268,7 @@ export default function OrdenDetalle() {
         {detalle.map(d => {
           const incDet = incidencias.find(i => i.productoId === d.productoId && i.estado === 'ABIERTA');
           return (
-            <div key={d.id} className="card"
-              style={{ borderColor: incDet ? 'var(--danger)' : 'var(--border)' }}>
+            <div key={d.id} className="card" style={{ borderColor: incDet ? 'var(--danger)' : 'var(--border)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                 <div>
                   <div style={{ fontWeight: 500, display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -329,15 +284,9 @@ export default function OrdenDetalle() {
               </div>
               {(Number(d.cantDespachada) > 0 || Number(d.cantEntregada) > 0) && (
                 <div style={{ marginTop: 8, paddingTop: 8, borderTop: '1px solid var(--border)', display: 'flex', gap: 16, fontSize: 12 }}>
-                  {Number(d.cantDespachada) > 0 && (
-                    <span style={{ color: 'var(--purple)' }}>Despachado: {d.cantDespachada}</span>
-                  )}
-                  {Number(d.cantEntregada) > 0 && (
-                    <span style={{ color: 'var(--success)' }}>Entregado: {d.cantEntregada}</span>
-                  )}
-                  {Number(d.diferencia) !== 0 && (
-                    <span style={{ color: 'var(--danger)' }}>Dif: {d.diferencia}</span>
-                  )}
+                  {Number(d.cantDespachada) > 0 && <span style={{ color: 'var(--purple)' }}>Despachado: {d.cantDespachada}</span>}
+                  {Number(d.cantEntregada) > 0 && <span style={{ color: 'var(--success)' }}>Entregado: {d.cantEntregada}</span>}
+                  {Number(d.diferencia) !== 0 && <span style={{ color: 'var(--danger)' }}>Dif: {d.diferencia}</span>}
                 </div>
               )}
             </div>
@@ -346,29 +295,25 @@ export default function OrdenDetalle() {
       </div>
 
       {puedeConfirmar && (
-        <button className="btn btn-primary"
-          style={{ width: '100%', justifyContent: 'center', marginBottom: 10 }}
-          onClick={intentarConfirmar}>
-          <CalendarCheck size={16} /> Confirmar orden
-        </button>
+        <LoadingButton onClick={intentarConfirmar} style={{ width: '100%', justifyContent: 'center', marginBottom: 10 }}>
+          <CalendarCheck size={16} style={{ marginRight: 6 }} /> Confirmar orden
+        </LoadingButton>
       )}
 
       {puedeProgramar && (
         <div>
           <div style={{ display: 'flex', gap: 10, marginBottom: 6 }}>
-            <input type="date" value={fechaDespacho}
-              min={hoy}
+            <input type="date" value={fechaDespacho} min={hoy}
               onChange={e => { setFechaDespacho(e.target.value); setErrorFecha(''); }}
               style={{ flex: 1 }} />
-            <button className="btn btn-primary" onClick={programar}>
-              <Truck size={16} /> Por despachar
-            </button>
+            <LoadingButton onClick={programar}>
+              <Truck size={16} style={{ marginRight: 6 }} /> Por despachar
+            </LoadingButton>
           </div>
           {errorFecha && <p style={{ color: 'var(--danger)', fontSize: 12 }}>{errorFecha}</p>}
         </div>
       )}
 
-      {/* Modal advertencia de stock */}
       {modalStock && (
         <Modal title="⚠️ Stock insuficiente" onClose={() => setModalStock(null)}>
           <p style={{ fontSize: 13, color: 'var(--text2)', marginBottom: 16 }}>
@@ -383,7 +328,7 @@ export default function OrdenDetalle() {
                 <div style={{ fontSize: 12, marginTop: 4, display: 'flex', gap: 16 }}>
                   <span style={{ color: 'var(--text2)' }}>Pedido: <strong>{p.cantPedida}</strong></span>
                   <span style={{ color: p.stockActual === 0 ? 'var(--danger)' : 'var(--warning)' }}>
-                    Stock actual: <strong>{p.stockActual}</strong>
+                    Stock: <strong>{p.stockActual}</strong>
                   </span>
                   <span style={{ color: 'var(--danger)' }}>Faltan: <strong>{p.diferencia}</strong></span>
                 </div>
@@ -395,10 +340,9 @@ export default function OrdenDetalle() {
               onClick={() => setModalStock(null)}>
               Cancelar
             </button>
-            <button className="btn btn-primary" style={{ flex: 1, justifyContent: 'center' }}
-              onClick={confirmar}>
-              <CalendarCheck size={16} /> Confirmar igual
-            </button>
+            <LoadingButton onClick={confirmar} style={{ flex: 1, justifyContent: 'center' }}>
+              <CalendarCheck size={16} style={{ marginRight: 6 }} /> Confirmar igual
+            </LoadingButton>
           </div>
         </Modal>
       )}
