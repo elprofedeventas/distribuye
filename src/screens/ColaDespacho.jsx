@@ -1,17 +1,21 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApi } from '../hooks/useApi';
-import { ESTADO_COLORS, formatFecha } from '../utils/constants';
+import { useApp } from '../context/AppContext';
+import { ROLES, ESTADO_COLORS, formatFecha } from '../utils/constants';
 import Badge from '../components/Badge';
 import { Truck, PackageCheck, AlertTriangle } from 'lucide-react';
 
 export default function ColaDespacho() {
   const { call, loading } = useApi();
+  const { usuario } = useApp();
   const navigate = useNavigate();
   const [ordenes, setOrdenes] = useState([]);
   const [despachando, setDespachando] = useState(null);
   const [detalle, setDetalle] = useState([]);
   const [cantidades, setCantidades] = useState({});
+
+  const soloLectura = usuario?.rol === ROLES.GERENCIA;
 
   const load = async () => {
     const data = await call('getOrdenes');
@@ -83,9 +87,7 @@ export default function ColaDespacho() {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                   <div>
                     <div style={{ fontWeight: 500 }}>{d.nombre}</div>
-                    <div style={{ fontSize: 12, color: 'var(--text2)' }}>
-                      SKU: {d.sku} · {d.unidad}
-                    </div>
+                    <div style={{ fontSize: 12, color: 'var(--text2)' }}>SKU: {d.sku} · {d.unidad}</div>
                     <div style={{ fontSize: 12, color: 'var(--text2)', marginTop: 2 }}>
                       Pedido: <strong>{d.cantPedida}</strong>
                     </div>
@@ -133,7 +135,13 @@ export default function ColaDespacho() {
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 20 }}>
             {porDespachar.map(o => (
-              <OrdenCard key={o.id} o={o} onDespachar={() => abrirDespacho(o)} onEntrega={null} call={call} navigate={navigate} />
+              <OrdenCard key={o.id} o={o}
+                onDespachar={soloLectura ? null : () => abrirDespacho(o)}
+                onEntrega={null}
+                call={call}
+                navigate={navigate}
+                soloLectura={soloLectura}
+              />
             ))}
           </div>
         </>
@@ -146,7 +154,13 @@ export default function ColaDespacho() {
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {despachadas.map(o => (
-              <OrdenCard key={o.id} o={o} onDespachar={null} onEntrega={() => navigate(`/despacho/${o.id}/entrega`)} call={call} navigate={navigate} />
+              <OrdenCard key={o.id} o={o}
+                onDespachar={null}
+                onEntrega={soloLectura ? null : () => navigate(`/despacho/${o.id}/entrega`)}
+                call={call}
+                navigate={navigate}
+                soloLectura={soloLectura}
+              />
             ))}
           </div>
         </>
@@ -155,7 +169,7 @@ export default function ColaDespacho() {
   );
 }
 
-function OrdenCard({ o, onDespachar, onEntrega, call, navigate }) {
+function OrdenCard({ o, onDespachar, onEntrega, call, navigate, soloLectura }) {
   const [detalle, setDetalle] = useState([]);
   const [expanded, setExpanded] = useState(false);
   const [incidencias, setIncidencias] = useState([]);
@@ -209,14 +223,10 @@ function OrdenCard({ o, onDespachar, onEntrega, call, navigate }) {
               <div style={{ textAlign: 'right' }}>
                 <span style={{ color: 'var(--text2)' }}>Pedido: {d.cantPedida}</span>
                 {Number(d.cantDespachada) > 0 && (
-                  <span style={{ color: 'var(--purple)', marginLeft: 8 }}>
-                    Desp: {d.cantDespachada}
-                  </span>
+                  <span style={{ color: 'var(--purple)', marginLeft: 8 }}>Desp: {d.cantDespachada}</span>
                 )}
                 {Number(d.cantEntregada) > 0 && (
-                  <span style={{ color: 'var(--success)', marginLeft: 8 }}>
-                    Ent: {d.cantEntregada}
-                  </span>
+                  <span style={{ color: 'var(--success)', marginLeft: 8 }}>Ent: {d.cantEntregada}</span>
                 )}
               </div>
             </div>
@@ -224,25 +234,27 @@ function OrdenCard({ o, onDespachar, onEntrega, call, navigate }) {
         </div>
       )}
 
-      <div style={{ display: 'flex', gap: 8 }}>
-        {onDespachar && (
-          <button className="btn btn-primary" style={{ flex: 1, justifyContent: 'center' }}
-            onClick={onDespachar}>
-            <Truck size={14} /> Despachar
-          </button>
-        )}
-        {onEntrega && (
-          <button style={{
-            flex: 1, justifyContent: 'center',
-            display: 'inline-flex', alignItems: 'center', gap: 6,
-            padding: '10px 16px', borderRadius: 8, fontSize: 14, fontWeight: 500,
-            background: 'var(--warning)', color: '#fff', cursor: 'pointer', border: 'none',
-          }}
-            onClick={onEntrega}>
-            <PackageCheck size={14} /> Registrar entrega
-          </button>
-        )}
-      </div>
+      {/* Botones solo para Despachador */}
+      {!soloLectura && (onDespachar || onEntrega) && (
+        <div style={{ display: 'flex', gap: 8 }}>
+          {onDespachar && (
+            <button className="btn btn-primary" style={{ flex: 1, justifyContent: 'center' }}
+              onClick={onDespachar}>
+              <Truck size={14} /> Despachar
+            </button>
+          )}
+          {onEntrega && (
+            <button style={{
+              flex: 1, justifyContent: 'center',
+              display: 'inline-flex', alignItems: 'center', gap: 6,
+              padding: '10px 16px', borderRadius: 8, fontSize: 14, fontWeight: 500,
+              background: 'var(--warning)', color: '#fff', cursor: 'pointer', border: 'none',
+            }} onClick={onEntrega}>
+              <PackageCheck size={14} /> Registrar entrega
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }
