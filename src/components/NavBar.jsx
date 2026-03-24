@@ -6,14 +6,16 @@ import {
   ClipboardList, Truck, AlertTriangle, LogOut
 } from 'lucide-react';
 
+const { GERENCIA, VENTAS, OPERACIONES, DESPACHADOR } = ROLES;
+
 const navItems = [
-  { path: '/', label: 'Dashboard', icon: LayoutDashboard, roles: null },
-  { path: '/canales', label: 'Clientes', icon: Users, roles: [ROLES.ADMIN, ROLES.VENDEDOR] },
-  { path: '/productos', label: 'Productos', icon: Package, roles: [ROLES.ADMIN] },
-  { path: '/inventario', label: 'Inventario', icon: Warehouse, roles: [ROLES.ADMIN] },
-  { path: '/ordenes', label: 'Órdenes', icon: ClipboardList, roles: [ROLES.ADMIN, ROLES.VENDEDOR] },
-  { path: '/despacho', label: 'Despacho', icon: Truck, roles: [ROLES.ADMIN, ROLES.DESPACHADOR] },
-  { path: '/incidencias', label: 'Incidencias', icon: AlertTriangle, roles: [ROLES.ADMIN, ROLES.VENDEDOR] },
+  { path: '/',            label: 'Dashboard',   icon: LayoutDashboard, roles: null },
+  { path: '/canales',     label: 'Clientes',    icon: Users,           roles: [GERENCIA, VENTAS, OPERACIONES] },
+  { path: '/productos',   label: 'Productos',   icon: Package,         roles: [GERENCIA, VENTAS, OPERACIONES] },
+  { path: '/inventario',  label: 'Inventario',  icon: Warehouse,       roles: [GERENCIA, VENTAS, OPERACIONES] },
+  { path: '/ordenes',     label: 'Órdenes',     icon: ClipboardList,   roles: [GERENCIA, VENTAS, OPERACIONES] },
+  { path: '/despacho',    label: 'Despacho',    icon: Truck,           roles: [GERENCIA, DESPACHADOR] },
+  { path: '/incidencias', label: 'Incidencias', icon: AlertTriangle,   roles: null },
 ];
 
 export default function NavBar() {
@@ -39,15 +41,15 @@ export default function NavBar() {
         padding: '8px 4px 12px',
       }}>
         {visible.map(({ path, label, icon: Icon }) => {
-          const active = location.pathname === path;
+          const active = location.pathname === path ||
+            (path !== '/' && location.pathname.startsWith(path));
           const isInv = path === '/inventario';
           return (
             <button key={path} onClick={() => navigate(path)} style={{
               display: 'flex', flexDirection: 'column', alignItems: 'center',
               gap: 3, background: 'none', padding: '4px 12px',
               color: active ? 'var(--primary)' : 'var(--text2)',
-              position: 'relative', flexShrink: 0,
-              minWidth: 60,
+              position: 'relative', flexShrink: 0, minWidth: 60,
             }}>
               <Icon size={20} />
               {isInv && alertas > 0 && (

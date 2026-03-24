@@ -1,21 +1,31 @@
 import { useEffect, useState } from 'react';
 import { useApi } from '../hooks/useApi';
+import { useApp } from '../context/AppContext';
+import { ROLES } from '../utils/constants';
 import { AlertTriangle, CheckCircle } from 'lucide-react';
 import Modal from '../components/Modal';
 
 export default function Incidencias() {
   const { call, loading } = useApi();
+  const { usuario } = useApp();
   const [incidencias, setIncidencias] = useState([]);
   const [ordenes, setOrdenes] = useState([]);
   const [filtro, setFiltro] = useState('ABIERTA');
   const [modal, setModal] = useState(null);
   const [notas, setNotas] = useState('');
 
+  const soloLectura = [ROLES.GERENCIA, ROLES.DESPACHADOR].includes(usuario?.rol);
+
   const load = () => Promise.all([
     call('getIncidencias'),
     call('getOrdenes'),
   ]).then(([incs, ords]) => {
-    setIncidencias(incs || []);
+    let incsFiltradas = incs || [];
+    // Despachador solo ve sus propias incidencias (las que él generó al despachar)
+    if (usuario?.rol === ROLES.DESPACHADOR) {
+      incsFiltradas = incsFiltradas.filter(i => i.tipo === 'DESPACHO' || i.tipo === 'ENTREGA');
+    }
+    setIncidencias(incsFiltradas);
     setOrdenes(ords || []);
   });
 
@@ -27,6 +37,7 @@ export default function Incidencias() {
   };
 
   const visibles = incidencias.filter(i => filtro === 'TODAS' || i.estado === filtro);
+  const abiertas = incidencias.filter(i => i.estado === 'ABIERTA').length;
 
   const cerrar = async () => {
     await call('updateIncidencia', {
@@ -39,8 +50,6 @@ export default function Incidencias() {
     setNotas('');
     load();
   };
-
-  const abiertas = incidencias.filter(i => i.estado === 'ABIERTA').length;
 
   return (
     <div className="page">
@@ -75,13 +84,14 @@ export default function Incidencias() {
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         {visibles.map(i => {
           const numeroOrden = getNumeroOrden(i.ordenId);
+          const puedesCerrar = !soloLectura && i.estado === 'ABIERTA';
           return (
             <div key={i.id} className="card"
               style={{
                 borderColor: i.estado === 'ABIERTA' ? 'var(--danger)' : 'var(--border)',
-                cursor: i.estado === 'ABIERTA' ? 'pointer' : 'default'
+                cursor: puedesCerrar ? 'pointer' : 'default',
               }}
-              onClick={() => i.estado === 'ABIERTA' && (setModal(i), setNotas(i.notas || ''))}>
+              onClick={() => puedesCerrar && (setModal(i), setNotas(i.notas || ''))}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <div style={{ flex: 1 }}>
                   {numeroOrden && (
@@ -115,16 +125,14 @@ export default function Incidencias() {
                     <span style={{ color: 'var(--danger)', fontWeight: 600 }}>Dif: {i.diferencia}</span>
                   </div>
                   {i.notas && (
-                    <div style={{ fontSize: 12, color: 'var(--text2)', marginTop: 4 }}>
-                      {i.notas}
-                    </div>
+                    <div style={{ fontSize: 12, color: 'var(--text2)', marginTop: 4 }}>{i.notas}</div>
                   )}
                   <div style={{ fontSize: 11, color: 'var(--text2)', marginTop: 4 }}>
                     {new Date(i.creadoEn).toLocaleDateString()}
                     {i.cierreEn && ` · Cerrada: ${new Date(i.cierreEn).toLocaleDateString()}`}
                   </div>
                 </div>
-                {i.estado === 'ABIERTA' && (
+                {puedesCerrar && (
                   <span style={{ fontSize: 11, color: 'var(--primary)' }}>Cerrar →</span>
                 )}
               </div>

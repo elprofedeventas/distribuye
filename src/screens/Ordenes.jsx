@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useApi } from '../hooks/useApi';
-import { ESTADOS_ORDEN, ESTADO_COLORS, ESTADO_LABELS, formatFecha } from '../utils/constants';
+import { useApp } from '../context/AppContext';
+import { ROLES, ESTADOS_ORDEN, ESTADO_COLORS, ESTADO_LABELS, formatFecha } from '../utils/constants';
 import Badge from '../components/Badge';
 import { Plus, AlertTriangle } from 'lucide-react';
 
@@ -9,11 +10,14 @@ const FILTROS = ['TODAS', ...Object.keys(ESTADOS_ORDEN)];
 
 export default function Ordenes() {
   const { call, loading } = useApi();
+  const { usuario } = useApp();
   const navigate = useNavigate();
   const location = useLocation();
   const [ordenes, setOrdenes] = useState([]);
   const [incidencias, setIncidencias] = useState([]);
   const [filtro, setFiltro] = useState(location.state?.filtro || 'TODAS');
+
+  const soloLectura = usuario?.rol === ROLES.GERENCIA;
 
   useEffect(() => {
     Promise.all([
@@ -26,7 +30,6 @@ export default function Ordenes() {
   }, []);
 
   const visibles = filtro === 'TODAS' ? ordenes : ordenes.filter(o => o.estado === filtro);
-
   const getIncidenciasOrden = (ordenId) =>
     incidencias.filter(i => i.ordenId === ordenId && i.estado === 'ABIERTA');
 
@@ -34,9 +37,11 @@ export default function Ordenes() {
     <div className="page">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
         <h1 className="page-title" style={{ margin: 0 }}>Órdenes</h1>
-        <button className="btn btn-primary" onClick={() => navigate('/ordenes/nueva')}>
-          <Plus size={16} /> Nueva
-        </button>
+        {!soloLectura && (
+          <button className="btn btn-primary" onClick={() => navigate('/ordenes/nueva')}>
+            <Plus size={16} /> Nueva
+          </button>
+        )}
       </div>
 
       <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 8, marginBottom: 16 }}>

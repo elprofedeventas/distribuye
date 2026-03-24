@@ -1,6 +1,7 @@
 export const ROLES = {
-  ADMIN: 'admin',
-  VENDEDOR: 'vendedor',
+  GERENCIA: 'gerencia',
+  VENTAS: 'ventas',
+  OPERACIONES: 'operaciones',
   DESPACHADOR: 'despachador',
 };
 
@@ -33,9 +34,12 @@ export const DIAS_SEMANA = [
 ];
 
 export const USUARIOS = [
-  { id: 'u1', nombre: 'Admin', rol: ROLES.ADMIN, pin: '1111' },
-  { id: 'u2', nombre: 'Vendedor', rol: ROLES.VENDEDOR, pin: '2222' },
-  { id: 'u3', nombre: 'Despachador', rol: ROLES.DESPACHADOR, pin: '3333' },
+  { id: 'u1', nombre: 'Gerencia',     rol: ROLES.GERENCIA,    pin: '1111' },
+  { id: 'u2', nombre: 'Ventas 1',     rol: ROLES.VENTAS,      pin: '2221' },
+  { id: 'u3', nombre: 'Ventas 2',     rol: ROLES.VENTAS,      pin: '2222' },
+  { id: 'u4', nombre: 'Ventas 3',     rol: ROLES.VENTAS,      pin: '2223' },
+  { id: 'u5', nombre: 'Operaciones',  rol: ROLES.OPERACIONES, pin: '3333' },
+  { id: 'u6', nombre: 'Despachador',  rol: ROLES.DESPACHADOR, pin: '4444' },
 ];
 
 export const formatFecha = (fecha) => {

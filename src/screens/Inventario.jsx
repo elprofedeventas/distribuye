@@ -1,15 +1,18 @@
 import { useEffect, useState } from 'react';
 import { useApi } from '../hooks/useApi';
 import { useApp } from '../context/AppContext';
+import { ROLES } from '../utils/constants';
 import Modal from '../components/Modal';
 import { AlertTriangle, Plus, Minus, RefreshCw } from 'lucide-react';
 
 export default function Inventario() {
   const { call, loading } = useApi();
-  const { refreshInventario } = useApp();
+  const { refreshInventario, usuario } = useApp();
   const [inventario, setInventario] = useState([]);
-  const [modal, setModal] = useState(null); // { item, tipo }
+  const [modal, setModal] = useState(null);
   const [cantidad, setCantidad] = useState('');
+
+  const soloLectura = usuario?.rol === ROLES.GERENCIA;
 
   const load = async () => {
     const data = await call('getInventario');
@@ -47,7 +50,7 @@ export default function Inventario() {
             </span>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
-            {alertas.map(i => <ItemCard key={i.id} i={i} onAjustar={setModal} />)}
+            {alertas.map(i => <ItemCard key={i.id} i={i} onAjustar={setModal} soloLectura={soloLectura} />)}
           </div>
         </>
       )}
@@ -58,20 +61,17 @@ export default function Inventario() {
             Stock normal
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {normales.map(i => <ItemCard key={i.id} i={i} onAjustar={setModal} />)}
+            {normales.map(i => <ItemCard key={i.id} i={i} onAjustar={setModal} soloLectura={soloLectura} />)}
           </div>
         </>
       )}
 
-      {inventario.length === 0 && !loading && (
-        <p className="empty">Sin productos en inventario</p>
-      )}
+      {inventario.length === 0 && !loading && <p className="empty">Sin productos en inventario</p>}
 
       {modal && (
         <Modal
           title={modal.tipo === 'entrada' ? '+ Entrada de stock' : modal.tipo === 'salida' ? '− Salida de stock' : '✎ Ajuste directo'}
-          onClose={() => setModal(null)}
-        >
+          onClose={() => setModal(null)}>
           <div style={{ marginBottom: 16 }}>
             <div style={{ fontWeight: 600 }}>{modal.item.nombre}</div>
             <div style={{ fontSize: 12, color: 'var(--text2)' }}>Stock actual: {modal.item.stockActual}</div>
@@ -89,7 +89,7 @@ export default function Inventario() {
   );
 }
 
-function ItemCard({ i, onAjustar }) {
+function ItemCard({ i, onAjustar, soloLectura }) {
   return (
     <div className="card" style={{ borderColor: i.alerta ? 'var(--danger)' : 'var(--border)' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
@@ -106,20 +106,22 @@ function ItemCard({ i, onAjustar }) {
             </span>
           </div>
         </div>
-        <div style={{ display: 'flex', gap: 6 }}>
-          <button className="btn btn-ghost" style={{ padding: '6px 10px' }}
-            onClick={() => onAjustar({ item: i, tipo: 'entrada' })}>
-            <Plus size={14} />
-          </button>
-          <button className="btn btn-ghost" style={{ padding: '6px 10px' }}
-            onClick={() => onAjustar({ item: i, tipo: 'salida' })}>
-            <Minus size={14} />
-          </button>
-          <button className="btn btn-ghost" style={{ padding: '6px 10px' }}
-            onClick={() => onAjustar({ item: i, tipo: 'ajuste' })}>
-            <RefreshCw size={14} />
-          </button>
-        </div>
+        {!soloLectura && (
+          <div style={{ display: 'flex', gap: 6 }}>
+            <button className="btn btn-ghost" style={{ padding: '6px 10px' }}
+              onClick={() => onAjustar({ item: i, tipo: 'entrada' })}>
+              <Plus size={14} />
+            </button>
+            <button className="btn btn-ghost" style={{ padding: '6px 10px' }}
+              onClick={() => onAjustar({ item: i, tipo: 'salida' })}>
+              <Minus size={14} />
+            </button>
+            <button className="btn btn-ghost" style={{ padding: '6px 10px' }}
+              onClick={() => onAjustar({ item: i, tipo: 'ajuste' })}>
+              <RefreshCw size={14} />
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
