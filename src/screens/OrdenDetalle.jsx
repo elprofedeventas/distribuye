@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useApi } from '../hooks/useApi';
-import { ESTADO_COLORS, ESTADO_LABELS, ROLES, formatFecha } from '../utils/constants';
+import { ESTADO_COLORS, ESTADO_LABELS, ROLES, formatFecha, formatMonto } from '../utils/constants';
 import { useApp } from '../context/AppContext';
 import Badge from '../components/Badge';
 import Modal from '../components/Modal';
@@ -169,7 +169,7 @@ export default function OrdenDetalle() {
                         style={{ width: 80 }} />
                       {p && <span style={{ fontSize: 12, color: 'var(--text2)' }}>{p.unidad || l.unidad}</span>}
                       {p && <span style={{ fontSize: 13, color: 'var(--success)', marginLeft: 'auto' }}>
-                        ${(Number(p.precio || l.precio) * Number(l.cantPedida)).toFixed(2)}
+                        {formatMonto(Number(p.precio || l.precio) * Number(l.cantPedida))}
                       </span>}
                     </div>
                   </div>
@@ -218,7 +218,7 @@ export default function OrdenDetalle() {
           </div>
           {incidenciasAbiertas.map(i => (
             <div key={i.id} style={{ fontSize: 12, color: 'var(--text2)', marginTop: 6, paddingLeft: 24 }}>
-              {i.nombre} · {i.tipo === 'DESPACHO' ? 'Despachado' : 'Entregado'}: {i.cantEntregada} / Pedido: {i.cantPedida} · Dif: {i.diferencia}
+              {i.nombre} · {i.tipo === 'DESPACHO' ? 'Despachado' : i.tipo === 'RECHAZO' ? 'Rechazado' : 'Entregado'}: {i.cantEntregada} / Pedido: {i.cantPedida} · Dif: {i.diferencia}
             </div>
           ))}
         </div>
@@ -243,7 +243,7 @@ export default function OrdenDetalle() {
         )}
         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginTop: 8 }}>
           <span style={{ color: 'var(--text2)' }}>Total</span>
-          <span style={{ fontWeight: 600, color: 'var(--success)' }}>${Number(orden.total || 0).toFixed(2)}</span>
+          <span style={{ fontWeight: 600, color: 'var(--success)' }}>{formatMonto(orden.total)}</span>
         </div>
         {orden.notas && (
           <div style={{ marginTop: 8, fontSize: 12, color: 'var(--text2)', borderTop: '1px solid var(--border)', paddingTop: 8 }}>
@@ -279,7 +279,7 @@ export default function OrdenDetalle() {
                 </div>
                 <div style={{ textAlign: 'right' }}>
                   <div style={{ fontWeight: 600 }}>Pedido: {d.cantPedida}</div>
-                  <div style={{ fontSize: 12, color: 'var(--text2)' }}>${Number(d.precio).toFixed(2)}</div>
+                  <div style={{ fontSize: 12, color: 'var(--text2)' }}>{formatMonto(d.precio)}</div>
                 </div>
               </div>
               {(Number(d.cantDespachada) > 0 || Number(d.cantEntregada) > 0) && (
@@ -295,7 +295,8 @@ export default function OrdenDetalle() {
       </div>
 
       {puedeConfirmar && (
-        <LoadingButton onClick={intentarConfirmar} style={{ width: '100%', justifyContent: 'center', marginBottom: 10 }}>
+        <LoadingButton onClick={intentarConfirmar}
+          style={{ width: '100%', justifyContent: 'center', marginBottom: 10 }}>
           <CalendarCheck size={16} style={{ marginRight: 6 }} /> Confirmar orden
         </LoadingButton>
       )}

@@ -154,6 +154,17 @@ export default function RegistrarEntrega() {
         </div>
       )}
 
+      <button className="btn btn-ghost"
+        style={{ width: '100%', justifyContent: 'center', marginBottom: 12, borderColor: 'var(--danger)', color: 'var(--danger)' }}
+        onClick={() => {
+          const ceros = {};
+          detalle.forEach(d => { ceros[d.id] = 0; });
+          setCantidades(ceros);
+          setNotas('Pedido rechazado por el canal');
+        }}>
+        Marcar como pedido rechazado
+      </button>
+
       <div className="form-group" style={{ marginBottom: 16 }}>
         <label>Notas de entrega</label>
         <textarea value={notas} onChange={e => setNotas(e.target.value)} rows={2}

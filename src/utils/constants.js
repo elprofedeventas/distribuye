@@ -46,3 +46,10 @@ export const formatFecha = (fecha) => {
   if (!fecha) return '';
   return String(fecha).split('T')[0];
 };
+
+export const formatMonto = (valor) => {
+  const num = isNaN(Number(valor)) ? 0 : Number(valor);
+  return '$' + num.toFixed(2)
+    .replace('.', ',')
+    .replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+};

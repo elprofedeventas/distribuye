@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import { useApi } from '../hooks/useApi';
-import { ROLES, formatFecha } from '../utils/constants';
+import { ROLES, formatFecha, formatMonto } from '../utils/constants';
 import { AlertTriangle, ClipboardList, Truck, CheckCircle, FileEdit, Package } from 'lucide-react';
 
 export default function Dashboard() {
@@ -36,10 +36,14 @@ export default function Dashboard() {
     ).length,
   };
 
+  const ventaHoy = ordenes
+    .filter(o => o.estado === 'ENTREGADA' && formatFecha(o.fechaEntrega) === hoy)
+    .reduce((sum, o) => sum + (isNaN(Number(o.total)) ? 0 : Number(o.total)), 0);
+
   const cardsDespachador = [
     { label: 'Por despachar', value: conteo.programadas, icon: ClipboardList, color: 'var(--warning)', path: '/despacho' },
     { label: 'En camino', value: conteo.despachadas, icon: Truck, color: 'var(--purple)', path: '/despacho' },
-    { label: 'Entregadas hoy', value: conteo.entregadas, icon: CheckCircle, color: 'var(--success)', path: '/ordenes', state: { filtro: 'ENTREGADA' } },
+    { label: 'Entregadas hoy', value: conteo.entregadas, icon: CheckCircle, color: 'var(--success)', path: '/despacho', state: { filtro: 'ENTREGADA' } },
     { label: 'Incidencias', value: incidenciasAbiertas, icon: AlertTriangle, color: incidenciasAbiertas > 0 ? 'var(--warning)' : 'var(--text2)', path: '/incidencias' },
     { label: 'Alertas stock', value: alertas, icon: AlertTriangle, color: alertas > 0 ? 'var(--danger)' : 'var(--text2)', path: '/inventario' },
   ];
@@ -63,6 +67,15 @@ export default function Dashboard() {
         Bienvenido, <strong style={{ color: 'var(--text)' }}>{usuario?.nombre}</strong>
       </p>
 
+      {!esDespachador && (
+        <div className="card" style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ fontSize: 12, color: 'var(--text2)' }}>Venta entregada hoy</div>
+          <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--success)' }}>
+            {loading ? '—' : formatMonto(ventaHoy)}
+          </div>
+        </div>
+      )}
+
       <div style={{
         display: 'grid',
         gridTemplateColumns: esDespachador ? '1fr' : '1fr 1fr',
@@ -85,7 +98,7 @@ export default function Dashboard() {
         ))}
       </div>
 
-      {!esDespachador && (
+      {!esDespachador && usuario?.rol !== ROLES.GERENCIA && (
         <button className="btn btn-primary"
           style={{ width: '100%', justifyContent: 'center' }}
           onClick={() => navigate('/ordenes/nueva')}>

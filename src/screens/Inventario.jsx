@@ -12,6 +12,7 @@ export default function Inventario() {
   const [inventario, setInventario] = useState([]);
   const [modal, setModal] = useState(null);
   const [cantidad, setCantidad] = useState('');
+  const [motivo, setMotivo] = useState('');
 
   const soloLectura = usuario?.rol === ROLES.GERENCIA;
 
@@ -24,15 +25,24 @@ export default function Inventario() {
 
   const ajustar = async () => {
     if (!cantidad) return;
+    if (modal.tipo === 'salida' && !motivo) return;
     await call('ajustarInventario', {
       productoId: modal.item.productoId,
       cantidad: Number(cantidad),
       tipo: modal.tipo,
+      motivo: motivo || '',
     });
     setModal(null);
     setCantidad('');
+    setMotivo('');
     await load();
     refreshInventario();
+  };
+
+  const abrirModal = (item, tipo) => {
+    setModal({ item, tipo });
+    setCantidad('');
+    setMotivo('');
   };
 
   const alertas = inventario.filter(i => i.alerta);
@@ -52,7 +62,7 @@ export default function Inventario() {
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
             {alertas.map(i => (
-              <ItemCard key={i.id} i={i} onAjustar={setModal} soloLectura={soloLectura} />
+              <ItemCard key={i.id} i={i} onAjustar={abrirModal} soloLectura={soloLectura} />
             ))}
           </div>
         </>
@@ -65,7 +75,7 @@ export default function Inventario() {
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {normales.map(i => (
-              <ItemCard key={i.id} i={i} onAjustar={setModal} soloLectura={soloLectura} />
+              <ItemCard key={i.id} i={i} onAjustar={abrirModal} soloLectura={soloLectura} />
             ))}
           </div>
         </>
@@ -75,17 +85,42 @@ export default function Inventario() {
 
       {modal && (
         <Modal
-          title={modal.tipo === 'entrada' ? '+ Entrada de stock' : modal.tipo === 'salida' ? '− Salida de stock' : '✎ Ajuste directo'}
+          title={
+            modal.tipo === 'entrada' ? '+ Entrada de stock' :
+            modal.tipo === 'salida' ? '− Salida de stock' :
+            '✎ Ajuste directo'
+          }
           onClose={() => setModal(null)}>
           <div style={{ marginBottom: 16 }}>
             <div style={{ fontWeight: 600 }}>{modal.item.nombre}</div>
-            <div style={{ fontSize: 12, color: 'var(--text2)' }}>Stock actual: {modal.item.stockActual}</div>
+            <div style={{ fontSize: 12, color: 'var(--text2)' }}>
+              Stock actual: {modal.item.stockActual}
+            </div>
           </div>
           <div className="form-group">
             <label>{modal.tipo === 'ajuste' ? 'Nuevo stock total' : 'Cantidad'}</label>
-            <input type="number" value={cantidad} onChange={e => setCantidad(e.target.value)} autoFocus />
+            <input type="number" value={cantidad}
+              onChange={e => setCantidad(e.target.value)} autoFocus />
           </div>
-          <LoadingButton onClick={ajustar} style={{ width: '100%', justifyContent: 'center' }}>
+          {modal.tipo === 'salida' && (
+            <div className="form-group">
+              <label>Motivo *</label>
+              <select value={motivo} onChange={e => setMotivo(e.target.value)}>
+                <option value="">— Seleccionar motivo —</option>
+                <option value="Despacho a cliente">Despacho a cliente</option>
+                <option value="Producto vencido">Producto vencido</option>
+                <option value="Producto dañado">Producto dañado</option>
+                <option value="Merma">Merma</option>
+                <option value="Muestra">Muestra</option>
+                <option value="Devolución">Devolución</option>
+                <option value="Otro">Otro</option>
+              </select>
+            </div>
+          )}
+          <LoadingButton
+            onClick={ajustar}
+            style={{ width: '100%', justifyContent: 'center' }}
+            disabled={modal.tipo === 'salida' && !motivo}>
             Confirmar
           </LoadingButton>
         </Modal>
@@ -104,7 +139,8 @@ function ItemCard({ i, onAjustar, soloLectura }) {
             {i.nombre}
           </div>
           <div style={{ fontSize: 12, color: 'var(--text2)' }}>SKU: {i.sku}</div>
-          <div style={{ fontSize: 20, fontWeight: 700, color: i.alerta ? 'var(--danger)' : 'var(--success)', marginTop: 4 }}>
+          <div style={{ fontSize: 20, fontWeight: 700,
+            color: i.alerta ? 'var(--danger)' : 'var(--success)', marginTop: 4 }}>
             {i.stockActual}
             <span style={{ fontSize: 11, fontWeight: 400, color: 'var(--text2)', marginLeft: 4 }}>
               / mín {i.stockMinimo}
@@ -114,17 +150,11 @@ function ItemCard({ i, onAjustar, soloLectura }) {
         {!soloLectura && (
           <div style={{ display: 'flex', gap: 6 }}>
             <button className="btn btn-ghost" style={{ padding: '6px 10px' }}
-              onClick={() => onAjustar({ item: i, tipo: 'entrada' })}>
-              <Plus size={14} />
-            </button>
+              onClick={() => onAjustar(i, 'entrada')}><Plus size={14} /></button>
             <button className="btn btn-ghost" style={{ padding: '6px 10px' }}
-              onClick={() => onAjustar({ item: i, tipo: 'salida' })}>
-              <Minus size={14} />
-            </button>
+              onClick={() => onAjustar(i, 'salida')}><Minus size={14} /></button>
             <button className="btn btn-ghost" style={{ padding: '6px 10px' }}
-              onClick={() => onAjustar({ item: i, tipo: 'ajuste' })}>
-              <RefreshCw size={14} />
-            </button>
+              onClick={() => onAjustar(i, 'ajuste')}><RefreshCw size={14} /></button>
           </div>
         )}
       </div>

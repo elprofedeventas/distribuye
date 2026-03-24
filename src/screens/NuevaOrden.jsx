@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApi } from '../hooks/useApi';
 import { useApp } from '../context/AppContext';
-import { formatFecha } from '../utils/constants';
+import { formatFecha, formatMonto } from '../utils/constants';
 import { Trash2, Plus } from 'lucide-react';
 import LoadingButton from '../components/LoadingButton';
 
@@ -106,7 +106,7 @@ export default function NuevaOrden() {
                       style={{ width: 80 }} />
                     {p && <span style={{ fontSize: 12, color: 'var(--text2)' }}>{p.unidad}</span>}
                     {p && <span style={{ fontSize: 13, color: 'var(--success)', marginLeft: 'auto' }}>
-                      ${(Number(p.precio) * Number(l.cantidad)).toFixed(2)}
+                      {formatMonto(Number(p.precio) * Number(l.cantidad))}
                     </span>}
                   </div>
                 </div>
@@ -122,7 +122,9 @@ export default function NuevaOrden() {
       {lineas.length > 0 && (
         <div className="card" style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between' }}>
           <span style={{ fontWeight: 600 }}>Total</span>
-          <span style={{ fontWeight: 700, color: 'var(--success)', fontSize: 16 }}>${total.toFixed(2)}</span>
+          <span style={{ fontWeight: 700, color: 'var(--success)', fontSize: 16 }}>
+            {formatMonto(total)}
+          </span>
         </div>
       )}
 

@@ -104,16 +104,21 @@ export default function Incidencias() {
                       ? <AlertTriangle size={14} color="var(--danger)" />
                       : <CheckCircle size={14} color="var(--success)" />}
                     <span style={{ fontWeight: 600, fontSize: 13 }}>{i.canalNombre}</span>
-                    {i.tipo && (
-                      <span style={{
-                        fontSize: 10, fontWeight: 600, padding: '1px 6px', borderRadius: 4,
-                        background: i.tipo === 'DESPACHO' ? 'var(--purple)22' : 'var(--warning)22',
-                        color: i.tipo === 'DESPACHO' ? 'var(--purple)' : 'var(--warning)',
-                        border: `1px solid ${i.tipo === 'DESPACHO' ? 'var(--purple)' : 'var(--warning)'}44`,
-                      }}>
-                        {i.tipo === 'DESPACHO' ? 'Despacho' : 'Entrega'}
-                      </span>
-                    )}
+                  {i.tipo && (
+                    <span style={{
+                      fontSize: 10, fontWeight: 600, padding: '1px 6px', borderRadius: 4,
+                      background: i.tipo === 'DESPACHO' ? 'var(--purple)22' :
+                                  i.tipo === 'RECHAZO'  ? 'var(--danger)22' : 'var(--warning)22',
+                      color: i.tipo === 'DESPACHO' ? 'var(--purple)' :
+                            i.tipo === 'RECHAZO'  ? 'var(--danger)'  : 'var(--warning)',
+                      border: `1px solid ${
+                        i.tipo === 'DESPACHO' ? 'var(--purple)' :
+                        i.tipo === 'RECHAZO'  ? 'var(--danger)'  : 'var(--warning)'
+                      }44`,
+                    }}>
+                      {i.tipo === 'DESPACHO' ? 'Despacho' : i.tipo === 'RECHAZO' ? 'Rechazo' : 'Entrega'}
+                    </span>
+                  )}
                   </div>
                   <div style={{ fontSize: 13 }}>{i.nombre}</div>
                   <div style={{ fontSize: 12, color: 'var(--text2)', marginTop: 4 }}>

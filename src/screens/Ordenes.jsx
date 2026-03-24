@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useApi } from '../hooks/useApi';
 import { useApp } from '../context/AppContext';
-import { ROLES, ESTADOS_ORDEN, ESTADO_COLORS, ESTADO_LABELS, formatFecha } from '../utils/constants';
+import { ROLES, ESTADOS_ORDEN, ESTADO_COLORS, ESTADO_LABELS, formatFecha, formatMonto } from '../utils/constants';
 import Badge from '../components/Badge';
 import { Plus, AlertTriangle } from 'lucide-react';
 
@@ -84,11 +84,13 @@ export default function Ordenes() {
                     {o.fechaDespacho ? ` · Despacho: ${formatFecha(o.fechaDespacho)}` : ''}
                   </div>
                   <div style={{ fontSize: 13, color: 'var(--success)', marginTop: 4 }}>
-                    ${Number(o.total || 0).toFixed(2)}
+                    {formatMonto(o.total)}
                   </div>
                   {tieneIncidencia && (
                     <div style={{ fontSize: 11, color: 'var(--danger)', marginTop: 4 }}>
-                      {incsOrden.length} incidencia{incsOrden.length > 1 ? 's' : ''} abierta{incsOrden.length > 1 ? 's' : ''} · {incsOrden[0].tipo === 'DESPACHO' ? 'Incidencia en despacho' : 'Incidencia en entrega'}
+                      {incsOrden.length} incidencia{incsOrden.length > 1 ? 's' : ''} abierta{incsOrden.length > 1 ? 's' : ''} ·{' '}
+                      {incsOrden[0].tipo === 'DESPACHO' ? 'Incidencia en despacho' :
+                       incsOrden[0].tipo === 'RECHAZO' ? 'Pedido rechazado' : 'Incidencia en entrega'}
                     </div>
                   )}
                 </div>

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApi } from '../hooks/useApi';
 import { useApp } from '../context/AppContext';
-import { ROLES, ESTADO_COLORS, formatFecha } from '../utils/constants';
+import { ROLES, ESTADO_COLORS, formatFecha, formatMonto } from '../utils/constants';
 import Badge from '../components/Badge';
 import LoadingButton from '../components/LoadingButton';
 import { Truck, PackageCheck, AlertTriangle } from 'lucide-react';
@@ -70,6 +70,9 @@ export default function ColaDespacho() {
           <div style={{ fontSize: 12, color: 'var(--text2)' }}>
             Despacho: {formatFecha(despachando.fechaDespacho)}
           </div>
+          <div style={{ fontSize: 13, color: 'var(--success)', marginTop: 4 }}>
+            {formatMonto(despachando.total)}
+          </div>
         </div>
 
         <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', marginBottom: 10 }}>
@@ -132,11 +135,7 @@ export default function ColaDespacho() {
             {porDespachar.map(o => (
               <OrdenCard key={o.id} o={o}
                 onDespachar={soloLectura ? null : () => abrirDespacho(o)}
-                onEntrega={null}
-                call={call}
-                navigate={navigate}
-                soloLectura={soloLectura}
-              />
+                onEntrega={null} call={call} navigate={navigate} soloLectura={soloLectura} />
             ))}
           </div>
         </>
@@ -152,10 +151,7 @@ export default function ColaDespacho() {
               <OrdenCard key={o.id} o={o}
                 onDespachar={null}
                 onEntrega={soloLectura ? null : () => navigate(`/despacho/${o.id}/entrega`)}
-                call={call}
-                navigate={navigate}
-                soloLectura={soloLectura}
-              />
+                call={call} navigate={navigate} soloLectura={soloLectura} />
             ))}
           </div>
         </>
@@ -198,7 +194,7 @@ function OrdenCard({ o, onDespachar, onEntrega, call, navigate, soloLectura }) {
             Despacho: {formatFecha(o.fechaDespacho)}
           </div>
           <div style={{ fontSize: 13, color: 'var(--success)', marginTop: 2 }}>
-            ${Number(o.total || 0).toFixed(2)}
+            {formatMonto(o.total)}
           </div>
           <div style={{ fontSize: 11, color: 'var(--primary)', marginTop: 4 }}>
             {expanded ? 'Ocultar detalle ▲' : 'Ver detalle ▼'}
@@ -240,10 +236,7 @@ function OrdenCard({ o, onDespachar, onEntrega, call, navigate, soloLectura }) {
             <LoadingButton
               onClick={onEntrega}
               className="btn"
-              style={{
-                flex: 1, justifyContent: 'center',
-                background: 'var(--warning)', color: '#fff',
-              }}>
+              style={{ flex: 1, justifyContent: 'center', background: 'var(--warning)', color: '#fff' }}>
               <PackageCheck size={14} style={{ marginRight: 6 }} /> Registrar entrega
             </LoadingButton>
           )}
