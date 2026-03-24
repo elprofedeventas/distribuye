@@ -3,6 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import { USUARIOS } from '../utils/constants';
 
+const ROLE_LABELS = {
+  gerencia: 'Gerencia',
+  ventas: 'Ventas',
+  operaciones: 'Operaciones',
+  despachador: 'Despachador',
+};
+
 export default function Login() {
   const { login } = useApp();
   const navigate = useNavigate();
@@ -28,7 +35,7 @@ export default function Login() {
         <p style={{ color: 'var(--text2)', fontSize: 13, marginTop: 4 }}>Control de distribución</p>
       </div>
 
-      <div className="card" style={{ width: '100%', maxWidth: 320 }}>
+      <div className="card" style={{ width: '100%', maxWidth: 360 }}>
         <div className="form-group">
           <label>PIN de acceso</label>
           <input
@@ -42,11 +49,36 @@ export default function Login() {
           />
         </div>
         {error && <p style={{ color: 'var(--danger)', fontSize: 13, marginBottom: 12 }}>{error}</p>}
-        <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }} onClick={handleLogin}>
+        <button className="btn btn-primary"
+          style={{ width: '100%', justifyContent: 'center', marginBottom: 20 }}
+          onClick={handleLogin}>
           Ingresar
         </button>
-        <div style={{ marginTop: 16, fontSize: 11, color: 'var(--text2)', textAlign: 'center' }}>
-          Admin: 1111 · Vendedor: 2222 · Despachador: 3333
+
+        {/* Tabla de usuarios */}
+        <div style={{ borderTop: '1px solid var(--border)', paddingTop: 16 }}>
+          <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text2)', marginBottom: 10, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+            Usuarios
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {USUARIOS.map(u => (
+              <div key={u.id}
+                style={{
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                  padding: '8px 10px', borderRadius: 8,
+                  background: 'var(--surface2)', cursor: 'pointer',
+                }}
+                onClick={() => { setPin(u.pin); setError(''); }}>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 500 }}>{u.nombre}</div>
+                  <div style={{ fontSize: 11, color: 'var(--text2)' }}>{ROLE_LABELS[u.rol] || u.rol}</div>
+                </div>
+                <div style={{ fontSize: 16, fontWeight: 700, letterSpacing: 4, color: 'var(--primary)' }}>
+                  {u.pin}
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </div>
