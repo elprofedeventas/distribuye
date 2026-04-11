@@ -5,6 +5,7 @@ import {
   LayoutDashboard, Users, Package, Warehouse,
   ClipboardList, Truck, AlertTriangle, LogOut
 } from 'lucide-react';
+import { LayoutDashboard, Users, Package, Warehouse, ClipboardList, Truck, AlertTriangle, LogOut, Tag } from 'lucide-react';
 
 const { GERENCIA, VENTAS, OPERACIONES, DESPACHADOR } = ROLES;
 
@@ -16,6 +17,7 @@ const navItems = [
   { path: '/ordenes',     label: 'Órdenes',     icon: ClipboardList,   roles: [GERENCIA, VENTAS, OPERACIONES] },
   { path: '/despacho',    label: 'Despacho',    icon: Truck,           roles: [GERENCIA, DESPACHADOR] },
   { path: '/incidencias', label: 'Reclamos',    icon: AlertTriangle,   roles: null },
+  { path: '/precios', label: 'Precios B2B', icon: Tag, roles: [GERENCIA, VENTAS, OPERACIONES] },
 ];
 
 export default function NavBar() {

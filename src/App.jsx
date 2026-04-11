@@ -13,6 +13,7 @@ import OrdenDetalle from './screens/OrdenDetalle';
 import ColaDespacho from './screens/ColaDespacho';
 import RegistrarEntrega from './screens/RegistrarEntrega';
 import Incidencias from './screens/Incidencias';
+import MatrizPrecios from './screens/MatrizPrecios';
 
 const { GERENCIA, VENTAS, OPERACIONES, DESPACHADOR } = ROLES;
 const TODOS = [GERENCIA, VENTAS, OPERACIONES, DESPACHADOR];
@@ -54,6 +55,13 @@ export default function App() {
         <Route path="inventario" element={
           <ProtectedRoute roles={[...PUEDE_EDITAR, GERENCIA]}>
             <Inventario />
+          </ProtectedRoute>
+        } />
+
+        // Dentro de las rutas, después de /inventario:
+        <Route path="precios" element={
+          <ProtectedRoute roles={[ROLES.GERENCIA, ROLES.VENTAS, ROLES.OPERACIONES]}>
+            <MatrizPrecios />
           </ProtectedRoute>
         } />
 

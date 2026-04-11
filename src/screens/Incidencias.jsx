@@ -6,13 +6,17 @@ import { AlertTriangle, CheckCircle } from 'lucide-react';
 import Modal from '../components/Modal';
 import LoadingButton from '../components/LoadingButton';
 
+const CATEGORIAS = ['Logística', 'Calidad', 'Facturación'];
+
 export default function Incidencias() {
   const { call, loading } = useApi();
   const { usuario } = useApp();
   const [incidencias, setIncidencias] = useState([]);
   const [ordenes, setOrdenes] = useState([]);
   const [filtro, setFiltro] = useState('ABIERTA');
-  const [modal, setModal] = useState(null);
+  const [modalAbrir, setModalAbrir] = useState(null);
+  const [modalCerrar, setModalCerrar] = useState(null);
+  const [categoria, setCategoria] = useState('');
   const [notas, setNotas] = useState('');
 
   const soloLectura = [ROLES.GERENCIA, ROLES.DESPACHADOR].includes(usuario?.rol);
@@ -39,16 +43,42 @@ export default function Incidencias() {
   const visibles = incidencias.filter(i => filtro === 'TODAS' || i.estado === filtro);
   const abiertas = incidencias.filter(i => i.estado === 'ABIERTA').length;
 
-  const cerrar = async () => {
+  const abrirConCategoria = async () => {
+    if (!categoria) return;
     await call('updateIncidencia', {
-      id: modal.id,
+      id: modalAbrir.id,
+      categoria,
+    });
+    setModalAbrir(null);
+    setCategoria('');
+    load();
+  };
+
+  const cerrar = async () => {
+    if (!categoria) return;
+    await call('updateIncidencia', {
+      id: modalCerrar.id,
       estado: 'CERRADA',
-      notas: notas || modal.notas,
+      categoria,
+      notas: notas || modalCerrar.notas,
       cierreEn: new Date().toISOString(),
     });
-    setModal(null);
+    setModalCerrar(null);
+    setCategoria('');
     setNotas('');
     load();
+  };
+
+  const handleClick = (i) => {
+    if (soloLectura || i.estado !== 'ABIERTA') return;
+    if (!i.categoria) {
+      setCategoria('');
+      setModalAbrir(i);
+    } else {
+      setCategoria(i.categoria);
+      setNotas(i.notas || '');
+      setModalCerrar(i);
+    }
   };
 
   return (
@@ -86,14 +116,15 @@ export default function Incidencias() {
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         {visibles.map(i => {
           const numeroOrden = getNumeroOrden(i.ordenId);
-          const puedesCerrar = !soloLectura && i.estado === 'ABIERTA';
+          const puedeGestionar = !soloLectura && i.estado === 'ABIERTA';
+          const necesitaCategoria = puedeGestionar && !i.categoria;
           return (
             <div key={i.id} className="card"
               style={{
                 borderColor: i.estado === 'ABIERTA' ? 'var(--danger)' : 'var(--border)',
-                cursor: puedesCerrar ? 'pointer' : 'default',
+                cursor: puedeGestionar ? 'pointer' : 'default',
               }}
-              onClick={() => puedesCerrar && (setModal(i), setNotas(i.notas || ''))}>
+              onClick={() => handleClick(i)}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <div style={{ flex: 1 }}>
                   {numeroOrden && (
@@ -101,7 +132,7 @@ export default function Incidencias() {
                       {numeroOrden}
                     </div>
                   )}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4, flexWrap: 'wrap' }}>
                     {i.estado === 'ABIERTA'
                       ? <AlertTriangle size={14} color="var(--danger)" />
                       : <CheckCircle size={14} color="var(--success)" />}
@@ -113,13 +144,18 @@ export default function Incidencias() {
                                     i.tipo === 'RECHAZO'  ? '#DC262622' : '#D9770622',
                         color: i.tipo === 'DESPACHO' ? '#7C3AED' :
                                i.tipo === 'RECHAZO'  ? '#DC2626'  : '#D97706',
-                        border: `1px solid ${
-                          i.tipo === 'DESPACHO' ? '#7C3AED' :
-                          i.tipo === 'RECHAZO'  ? '#DC2626'  : '#D97706'
-                        }44`,
+                        border: `1px solid ${i.tipo === 'DESPACHO' ? '#7C3AED' : i.tipo === 'RECHAZO' ? '#DC2626' : '#D97706'}44`,
                       }}>
-                        {i.tipo === 'DESPACHO' ? 'Preparación' :
-                         i.tipo === 'RECHAZO'  ? 'Rechazo'     : 'Entrega'}
+                        {i.tipo === 'DESPACHO' ? 'Preparación' : i.tipo === 'RECHAZO' ? 'Rechazo' : 'Entrega'}
+                      </span>
+                    )}
+                    {i.categoria && (
+                      <span style={{
+                        fontSize: 10, fontWeight: 600, padding: '1px 6px', borderRadius: 4,
+                        background: '#0891B222', color: '#0891B2',
+                        border: '1px solid #0891B244',
+                      }}>
+                        {i.categoria}
                       </span>
                     )}
                   </div>
@@ -140,8 +176,10 @@ export default function Incidencias() {
                     {i.cierreEn && ` · Cerrado: ${new Date(i.cierreEn).toLocaleDateString()}`}
                   </div>
                 </div>
-                {puedesCerrar && (
-                  <span style={{ fontSize: 11, color: 'var(--primary)' }}>Cerrar →</span>
+                {puedeGestionar && (
+                  <span style={{ fontSize: 11, color: necesitaCategoria ? 'var(--warning)' : 'var(--primary)', marginLeft: 8 }}>
+                    {necesitaCategoria ? 'Clasificar →' : 'Cerrar →'}
+                  </span>
                 )}
               </div>
             </div>
@@ -149,20 +187,58 @@ export default function Incidencias() {
         })}
       </div>
 
-      {modal && (
-        <Modal title="Cerrar reclamo" onClose={() => setModal(null)}>
+      {/* Modal clasificar (sin categoría aún) */}
+      {modalAbrir && (
+        <Modal title="Clasificar reclamo" onClose={() => setModalAbrir(null)}>
           <div style={{ marginBottom: 16 }}>
-            {getNumeroOrden(modal.ordenId) && (
+            {getNumeroOrden(modalAbrir.ordenId) && (
               <div style={{ fontSize: 11, color: 'var(--primary)', fontWeight: 600, marginBottom: 4 }}>
-                {getNumeroOrden(modal.ordenId)}
+                {getNumeroOrden(modalAbrir.ordenId)}
               </div>
             )}
-            <div style={{ fontWeight: 600 }}>{modal.canalNombre} · {modal.nombre}</div>
+            <div style={{ fontWeight: 600 }}>{modalAbrir.canalNombre} · {modalAbrir.nombre}</div>
             <div style={{ fontSize: 13, color: 'var(--text2)', marginTop: 4 }}>
-              Pedido: {modal.cantPedida} ·{' '}
-              {modal.tipo === 'DESPACHO' ? 'Despachado' : 'Entregado'}: {modal.cantEntregada} ·{' '}
-              Diferencia: {modal.diferencia}
+              Diferencia: {modalAbrir.diferencia} unidades
             </div>
+          </div>
+          <div className="form-group">
+            <label>Categoría del reclamo *</label>
+            <select value={categoria} onChange={e => setCategoria(e.target.value)}>
+              <option value="">— Seleccionar —</option>
+              {CATEGORIAS.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </div>
+          <LoadingButton
+            onClick={abrirConCategoria}
+            style={{ width: '100%', justifyContent: 'center' }}
+            disabled={!categoria}>
+            Guardar clasificación
+          </LoadingButton>
+        </Modal>
+      )}
+
+      {/* Modal cerrar */}
+      {modalCerrar && (
+        <Modal title="Cerrar reclamo" onClose={() => setModalCerrar(null)}>
+          <div style={{ marginBottom: 16 }}>
+            {getNumeroOrden(modalCerrar.ordenId) && (
+              <div style={{ fontSize: 11, color: 'var(--primary)', fontWeight: 600, marginBottom: 4 }}>
+                {getNumeroOrden(modalCerrar.ordenId)}
+              </div>
+            )}
+            <div style={{ fontWeight: 600 }}>{modalCerrar.canalNombre} · {modalCerrar.nombre}</div>
+            <div style={{ fontSize: 13, color: 'var(--text2)', marginTop: 4 }}>
+              Pedido: {modalCerrar.cantPedida} ·{' '}
+              {modalCerrar.tipo === 'DESPACHO' ? 'Despachado' : 'Entregado'}: {modalCerrar.cantEntregada} ·{' '}
+              Diferencia: {modalCerrar.diferencia}
+            </div>
+          </div>
+          <div className="form-group">
+            <label>Categoría *</label>
+            <select value={categoria} onChange={e => setCategoria(e.target.value)}>
+              <option value="">— Seleccionar —</option>
+              {CATEGORIAS.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
           </div>
           <div className="form-group">
             <label>Notas de cierre</label>
@@ -172,7 +248,8 @@ export default function Incidencias() {
           <LoadingButton
             onClick={cerrar}
             className="btn btn-success"
-            style={{ width: '100%', justifyContent: 'center' }}>
+            style={{ width: '100%', justifyContent: 'center' }}
+            disabled={!categoria}>
             <CheckCircle size={16} style={{ marginRight: 6 }} /> Marcar como cerrado
           </LoadingButton>
         </Modal>

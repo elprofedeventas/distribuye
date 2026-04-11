@@ -6,7 +6,7 @@ import { useApp } from '../context/AppContext';
 import Badge from '../components/Badge';
 import Modal from '../components/Modal';
 import LoadingButton from '../components/LoadingButton';
-import { ArrowLeft, Truck, CalendarCheck, AlertTriangle, Plus, Trash2 } from 'lucide-react';
+import { ArrowLeft, Truck, CalendarCheck, AlertTriangle, Plus, Trash2, FileCheck } from 'lucide-react';
 
 export default function OrdenDetalle() {
   const { id } = useParams();
@@ -25,6 +25,7 @@ export default function OrdenDetalle() {
 
   const hoy = formatFecha(new Date().toISOString());
   const soloLectura = usuario?.rol === ROLES.GERENCIA;
+  const puedeFacturar = [ROLES.VENTAS, ROLES.OPERACIONES].includes(usuario?.rol);
 
   const load = async () => {
     const [ordenes, det, incs] = await Promise.all([
@@ -46,7 +47,11 @@ export default function OrdenDetalle() {
     setProductos(prods || []);
     setLineas(detalle.map(d => ({
       id: d.id, productoId: d.productoId, sku: d.sku,
-      nombre: d.nombre, unidad: d.unidad, precio: d.precio, cantPedida: d.cantPedida,
+      nombre: d.nombre, unidad: d.unidad, precio: d.precio,
+      precioFinal: d.precioFinal || d.precio,
+      descuento: d.descuento || 0,
+      ivaRate: d.ivaRate ?? 0.15,
+      cantPedida: d.cantPedida,
     })));
     setEditando(true);
   };
@@ -65,16 +70,31 @@ export default function OrdenDetalle() {
       } else if (p) {
         await call('createOrdenDetalle', {
           ordenId: id, productoId: p.id, sku: p.sku, nombre: p.nombre,
-          unidad: p.unidad, precio: p.precio, cantPedida: Number(linea.cantPedida),
+          unidad: p.unidad, precio: p.precio,
+          precioFinal: p.precio, descuento: 0,
+          ivaRate: Number(p.ivaRate ?? 0.15),
+          cantPedida: Number(linea.cantPedida),
           cantDespachada: 0, cantEntregada: 0, diferencia: 0,
         });
       }
     }
-    const nuevoTotal = lineas.reduce((sum, l) => {
+    const nuevoSubtotal = lineas.reduce((sum, l) => {
       const p = l.id ? detalle.find(d => d.id === l.id) : getProducto(l.productoId);
-      return sum + Number(p?.precio || 0) * Number(l.cantPedida);
+      const precio = Number(l.precioFinal || p?.precio || 0);
+      return sum + precio * Number(l.cantPedida);
     }, 0);
-    await call('updateOrdenEstado', { id, total: nuevoTotal, estado: 'BORRADOR' });
+    const nuevoIva = lineas.reduce((sum, l) => {
+      const p = l.id ? detalle.find(d => d.id === l.id) : getProducto(l.productoId);
+      const precio = Number(l.precioFinal || p?.precio || 0);
+      const ivaRate = Number(l.ivaRate ?? p?.ivaRate ?? 0.15);
+      return sum + precio * Number(l.cantPedida) * ivaRate;
+    }, 0);
+    await call('updateOrdenEstado', {
+      id, estado: 'BORRADOR',
+      subtotal: Math.round(nuevoSubtotal * 100) / 100,
+      iva: Math.round(nuevoIva * 100) / 100,
+      total: Math.round((nuevoSubtotal + nuevoIva) * 100) / 100,
+    });
     setEditando(false);
     load();
   };
@@ -111,6 +131,11 @@ export default function OrdenDetalle() {
     load();
   };
 
+  const marcarFacturada = async () => {
+    await call('marcarFacturada', { id });
+    load();
+  };
+
   if (!orden) return <div className="page"><p className="empty">Cargando...</p></div>;
 
   const puedeConfirmar = !soloLectura && orden.estado === 'BORRADOR' && usuario?.rol !== ROLES.DESPACHADOR;
@@ -126,14 +151,12 @@ export default function OrdenDetalle() {
             onClick={() => setEditando(false)}>←</button>
           <h1 className="page-title" style={{ margin: 0 }}>Editar orden</h1>
         </div>
-
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
           <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)' }}>Productos</span>
           <button className="btn btn-ghost" style={{ padding: '6px 10px', fontSize: 13 }} onClick={addLinea}>
             <Plus size={14} /> Agregar
           </button>
         </div>
-
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 20 }}>
           {lineas.map((l, i) => {
             const p = l.id ? detalle.find(d => d.id === l.id) : getProducto(l.productoId);
@@ -154,6 +177,8 @@ export default function OrdenDetalle() {
                             ...x, productoId: e.target.value,
                             sku: prod?.sku || '', nombre: prod?.nombre || '',
                             unidad: prod?.unidad || '', precio: prod?.precio || 0,
+                            precioFinal: prod?.precio || 0, descuento: 0,
+                            ivaRate: Number(prod?.ivaRate ?? 0.15),
                           } : x));
                         }}
                         style={{ marginBottom: 8 }}>
@@ -169,7 +194,7 @@ export default function OrdenDetalle() {
                         style={{ width: 80 }} />
                       {p && <span style={{ fontSize: 12, color: 'var(--text2)' }}>{p.unidad || l.unidad}</span>}
                       {p && <span style={{ fontSize: 13, color: 'var(--success)', marginLeft: 'auto' }}>
-                        {formatMonto(Number(p.precio || l.precio) * Number(l.cantPedida))}
+                        {formatMonto(Number(l.precioFinal || p.precio) * Number(l.cantPedida))}
                       </span>}
                     </div>
                   </div>
@@ -183,7 +208,6 @@ export default function OrdenDetalle() {
             );
           })}
         </div>
-
         <LoadingButton onClick={guardarEdicion} style={{ width: '100%', justifyContent: 'center' }}>
           Guardar cambios
         </LoadingButton>
@@ -213,12 +237,12 @@ export default function OrdenDetalle() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <AlertTriangle size={16} color="var(--danger)" />
             <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--danger)' }}>
-              {incidenciasAbiertas.length} incidencia{incidenciasAbiertas.length > 1 ? 's' : ''} abierta{incidenciasAbiertas.length > 1 ? 's' : ''}
+              {incidenciasAbiertas.length} reclamo{incidenciasAbiertas.length > 1 ? 's' : ''} abierto{incidenciasAbiertas.length > 1 ? 's' : ''}
             </span>
           </div>
           {incidenciasAbiertas.map(i => (
             <div key={i.id} style={{ fontSize: 12, color: 'var(--text2)', marginTop: 6, paddingLeft: 24 }}>
-              {i.nombre} · {i.tipo === 'DESPACHO' ? 'Despachado' : i.tipo === 'RECHAZO' ? 'Rechazado' : 'Entregado'}: {i.cantEntregada} / Pedido: {i.cantPedida} · Dif: {i.diferencia}
+              {i.nombre} · {i.tipo === 'DESPACHO' ? 'Preparación' : 'Entrega'}: {i.cantEntregada} / Pedido: {i.cantPedida} · Dif: {i.diferencia}
             </div>
           ))}
         </div>
@@ -241,13 +265,40 @@ export default function OrdenDetalle() {
             <span>{formatFecha(orden.fechaEntrega)}</span>
           </div>
         )}
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginTop: 8 }}>
-          <span style={{ color: 'var(--text2)' }}>Total</span>
-          <span style={{ fontWeight: 600, color: 'var(--success)' }}>{formatMonto(orden.total)}</span>
+        <div style={{ borderTop: '1px solid var(--border)', marginTop: 10, paddingTop: 10 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginBottom: 4 }}>
+            <span style={{ color: 'var(--text2)' }}>Subtotal</span>
+            <span>{formatMonto(orden.subtotal)}</span>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginBottom: 4 }}>
+            <span style={{ color: 'var(--text2)' }}>IVA (15%)</span>
+            <span>{formatMonto(orden.iva)}</span>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 15, fontWeight: 700 }}>
+            <span>Total</span>
+            <span style={{ color: 'var(--success)' }}>{formatMonto(orden.total)}</span>
+          </div>
         </div>
         {orden.notas && (
           <div style={{ marginTop: 8, fontSize: 12, color: 'var(--text2)', borderTop: '1px solid var(--border)', paddingTop: 8 }}>
             {orden.notas}
+          </div>
+        )}
+
+        {/* Estado de facturación */}
+        {orden.estado === 'ENTREGADA' && (
+          <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <FileCheck size={16} color={orden.facturada ? 'var(--success)' : 'var(--text2)'} />
+              <span style={{ fontSize: 13, color: orden.facturada ? 'var(--success)' : 'var(--text2)', fontWeight: orden.facturada ? 600 : 400 }}>
+                {orden.facturada ? 'Facturada' : 'Pendiente de facturación'}
+              </span>
+            </div>
+            {!orden.facturada && puedeFacturar && (
+              <LoadingButton onClick={marcarFacturada} className="btn btn-ghost" style={{ padding: '5px 12px', fontSize: 12 }}>
+                Marcar facturada
+              </LoadingButton>
+            )}
           </div>
         )}
       </div>
@@ -258,15 +309,17 @@ export default function OrdenDetalle() {
         </span>
         {puedeEditar && (
           <button className="btn btn-ghost" style={{ padding: '6px 12px', fontSize: 12 }}
-            onClick={abrirEdicion}>
-            ✎ Editar
-          </button>
+            onClick={abrirEdicion}>✎ Editar</button>
         )}
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
         {detalle.map(d => {
           const incDet = incidencias.find(i => i.productoId === d.productoId && i.estado === 'ABIERTA');
+          const precioFinal = Number(d.precioFinal || d.precio);
+          const ivaRate = Number(d.ivaRate ?? 0.15);
+          const subtotalLinea = precioFinal * Number(d.cantPedida);
+          const ivaLinea = subtotalLinea * ivaRate;
           return (
             <div key={d.id} className="card" style={{ borderColor: incDet ? 'var(--danger)' : 'var(--border)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
@@ -276,10 +329,21 @@ export default function OrdenDetalle() {
                     {d.nombre}
                   </div>
                   <div style={{ fontSize: 12, color: 'var(--text2)' }}>SKU: {d.sku} · {d.unidad}</div>
+                  {Number(d.descuento) > 0 && (
+                    <div style={{ fontSize: 11, color: 'var(--success)' }}>
+                      {d.descuento}% desc. · PVP: {formatMonto(d.precio)}
+                    </div>
+                  )}
                 </div>
                 <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontWeight: 600 }}>Pedido: {d.cantPedida}</div>
-                  <div style={{ fontSize: 12, color: 'var(--text2)' }}>{formatMonto(d.precio)}</div>
+                  <div style={{ fontWeight: 600 }}>×{d.cantPedida}</div>
+                  <div style={{ fontSize: 12, color: 'var(--text2)' }}>{formatMonto(precioFinal)} c/u</div>
+                  <div style={{ fontSize: 11, color: 'var(--text2)' }}>
+                    +IVA {(ivaRate * 100).toFixed(0)}%: {formatMonto(ivaLinea)}
+                  </div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--success)' }}>
+                    {formatMonto(subtotalLinea + ivaLinea)}
+                  </div>
                 </div>
               </div>
               {(Number(d.cantDespachada) > 0 || Number(d.cantEntregada) > 0) && (
@@ -308,7 +372,7 @@ export default function OrdenDetalle() {
               onChange={e => { setFechaDespacho(e.target.value); setErrorFecha(''); }}
               style={{ flex: 1 }} />
             <LoadingButton onClick={programar}>
-              <Truck size={16} style={{ marginRight: 6 }} /> Por despachar
+              <Truck size={16} style={{ marginRight: 6 }} /> En preparación
             </LoadingButton>
           </div>
           {errorFecha && <p style={{ color: 'var(--danger)', fontSize: 12 }}>{errorFecha}</p>}
@@ -338,9 +402,7 @@ export default function OrdenDetalle() {
           </div>
           <div style={{ display: 'flex', gap: 10 }}>
             <button className="btn btn-ghost" style={{ flex: 1, justifyContent: 'center' }}
-              onClick={() => setModalStock(null)}>
-              Cancelar
-            </button>
+              onClick={() => setModalStock(null)}>Cancelar</button>
             <LoadingButton onClick={confirmar} style={{ flex: 1, justifyContent: 'center' }}>
               <CalendarCheck size={16} style={{ marginRight: 6 }} /> Confirmar igual
             </LoadingButton>

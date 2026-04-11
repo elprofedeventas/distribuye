@@ -12,6 +12,7 @@ export default function NuevaOrden() {
   const navigate = useNavigate();
   const [canales, setCanales] = useState([]);
   const [productos, setProductos] = useState([]);
+  const [matrizPrecios, setMatrizPrecios] = useState([]);
   const [canalId, setCanalId] = useState('');
   const [notas, setNotas] = useState('');
   const [lineas, setLineas] = useState([]);
@@ -21,29 +22,59 @@ export default function NuevaOrden() {
     call('getProductos').then(d => setProductos(d || []));
   }, []);
 
+  // Cargar precios del cliente cuando cambia el canal
+  useEffect(() => {
+    if (!canalId) { setMatrizPrecios([]); return; }
+    call('getPreciosCliente', { clienteId: canalId })
+      .then(d => setMatrizPrecios(d || []));
+  }, [canalId]);
+
   const addLinea = () => setLineas(l => [...l, { productoId: '', cantidad: 1 }]);
   const setLinea = (i, k, v) => setLineas(l => l.map((x, j) => j === i ? { ...x, [k]: v } : x));
   const removeLinea = (i) => setLineas(l => l.filter((_, j) => j !== i));
   const getProducto = (id) => productos.find(p => p.id === id);
 
-  const total = lineas.reduce((sum, l) => {
+  const getPrecioFinal = (productoId, pvp) => {
+    const precio = matrizPrecios.find(p => p.productoId === productoId);
+    if (precio && precio.precioB2B) {
+      return { precioFinal: Number(precio.precioB2B), descuento: Number(precio.descuento || 0) };
+    }
+    return { precioFinal: Number(pvp), descuento: 0 };
+  };
+
+  const calcularLinea = (l) => {
     const p = getProducto(l.productoId);
-    return sum + (p ? Number(p.precio) * Number(l.cantidad) : 0);
-  }, 0);
+    if (!p) return { subtotal: 0, iva: 0, total: 0, precioFinal: 0, descuento: 0 };
+    const { precioFinal, descuento } = getPrecioFinal(p.id, p.precio);
+    const ivaRate = Number(p.ivaRate ?? 0.15);
+    const subtotal = precioFinal * Number(l.cantidad);
+    const iva = subtotal * ivaRate;
+    return { subtotal, iva, total: subtotal + iva, precioFinal, descuento, ivaRate };
+  };
+
+  const totales = lineas.reduce((acc, l) => {
+    const c = calcularLinea(l);
+    return { subtotal: acc.subtotal + c.subtotal, iva: acc.iva + c.iva, total: acc.total + c.total };
+  }, { subtotal: 0, iva: 0, total: 0 });
 
   const save = async () => {
     if (!canalId || lineas.length === 0) return;
     const canal = canales.find(c => c.id === canalId);
     const detalle = lineas.map(l => {
       const p = getProducto(l.productoId);
+      const { precioFinal, descuento } = getPrecioFinal(p.id, p.precio);
       return {
         productoId: p.id, sku: p.sku, nombre: p.nombre,
-        unidad: p.unidad, precio: p.precio, cantPedida: Number(l.cantidad),
+        unidad: p.unidad, precio: p.precio,
+        precioFinal, descuento,
+        ivaRate: Number(p.ivaRate ?? 0.15),
+        cantPedida: Number(l.cantidad),
       };
     });
     await call('createOrden', {
       orden: {
         canalId, canalNombre: canal.nombre,
+        ruc: canal.ruc || '',
         fecha: formatFecha(new Date().toISOString()),
         notas, creadoPor: usuario?.nombre,
       },
@@ -61,9 +92,7 @@ export default function NuevaOrden() {
         <select value={canalId} onChange={e => setCanalId(e.target.value)}>
           <option value="">— Seleccionar cliente —</option>
           {canales.map(c => (
-            <option key={c.id} value={c.id}>
-              {c.nombre} {c.diaSemana ? `(${c.diaSemana})` : ''}
-            </option>
+            <option key={c.id} value={c.id}>{c.nombre}</option>
           ))}
         </select>
       </div>
@@ -89,6 +118,7 @@ export default function NuevaOrden() {
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 20 }}>
         {lineas.map((l, i) => {
           const p = getProducto(l.productoId);
+          const calc = calcularLinea(l);
           return (
             <div key={i} className="card">
               <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
@@ -105,10 +135,24 @@ export default function NuevaOrden() {
                       onChange={e => setLinea(i, 'cantidad', e.target.value)}
                       style={{ width: 80 }} />
                     {p && <span style={{ fontSize: 12, color: 'var(--text2)' }}>{p.unidad}</span>}
-                    {p && <span style={{ fontSize: 13, color: 'var(--success)', marginLeft: 'auto' }}>
-                      {formatMonto(Number(p.precio) * Number(l.cantidad))}
-                    </span>}
                   </div>
+                  {p && (
+                    <div style={{ marginTop: 8, fontSize: 12 }}>
+                      {calc.descuento > 0 && (
+                        <div style={{ color: 'var(--success)', marginBottom: 2 }}>
+                          Precio B2B: {formatMonto(calc.precioFinal)}
+                          <span style={{ color: 'var(--text2)', marginLeft: 6 }}>
+                            ({calc.descuento}% desc. sobre {formatMonto(p.precio)})
+                          </span>
+                        </div>
+                      )}
+                      <div style={{ color: 'var(--text2)' }}>
+                        Subtotal: {formatMonto(calc.subtotal)} +
+                        IVA {((calc.ivaRate || 0) * 100).toFixed(0)}%: {formatMonto(calc.iva)} =
+                        <strong style={{ color: 'var(--text)', marginLeft: 4 }}>{formatMonto(calc.total)}</strong>
+                      </div>
+                    </div>
+                  )}
                 </div>
                 <button className="btn btn-ghost" style={{ padding: '6px 10px' }} onClick={() => removeLinea(i)}>
                   <Trash2 size={14} color="var(--danger)" />
@@ -120,11 +164,19 @@ export default function NuevaOrden() {
       </div>
 
       {lineas.length > 0 && (
-        <div className="card" style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between' }}>
-          <span style={{ fontWeight: 600 }}>Total</span>
-          <span style={{ fontWeight: 700, color: 'var(--success)', fontSize: 16 }}>
-            {formatMonto(total)}
-          </span>
+        <div className="card" style={{ marginBottom: 16 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginBottom: 6 }}>
+            <span style={{ color: 'var(--text2)' }}>Subtotal</span>
+            <span>{formatMonto(totales.subtotal)}</span>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginBottom: 6 }}>
+            <span style={{ color: 'var(--text2)' }}>IVA</span>
+            <span>{formatMonto(totales.iva)}</span>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 15, fontWeight: 700, borderTop: '1px solid var(--border)', paddingTop: 8 }}>
+            <span>Total</span>
+            <span style={{ color: 'var(--success)' }}>{formatMonto(totales.total)}</span>
+          </div>
         </div>
       )}
 
