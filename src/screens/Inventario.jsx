@@ -50,14 +50,14 @@ export default function Inventario() {
 
   return (
     <div className="page">
-      <h1 className="page-title">Inventario</h1>
+      <h1 className="page-title">Reposición de Inventario</h1>
 
       {alertas.length > 0 && (
         <>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
             <AlertTriangle size={16} color="var(--danger)" />
             <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--danger)' }}>
-              Bajo stock mínimo
+              Requieren reposición
             </span>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
@@ -87,7 +87,7 @@ export default function Inventario() {
         <Modal
           title={
             modal.tipo === 'entrada' ? '+ Entrada de stock' :
-            modal.tipo === 'salida' ? '− Salida de stock' :
+            modal.tipo === 'salida'  ? '− Salida de stock'  :
             '✎ Ajuste directo'
           }
           onClose={() => setModal(null)}>

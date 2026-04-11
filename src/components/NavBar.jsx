@@ -12,10 +12,10 @@ const navItems = [
   { path: '/',            label: 'Dashboard',   icon: LayoutDashboard, roles: null },
   { path: '/canales',     label: 'Clientes',    icon: Users,           roles: [GERENCIA, VENTAS, OPERACIONES] },
   { path: '/productos',   label: 'Productos',   icon: Package,         roles: [GERENCIA, VENTAS, OPERACIONES] },
-  { path: '/inventario',  label: 'Inventario',  icon: Warehouse,       roles: [GERENCIA, VENTAS, OPERACIONES] },
+  { path: '/inventario',  label: 'Reposición',  icon: Warehouse,       roles: [GERENCIA, VENTAS, OPERACIONES] },
   { path: '/ordenes',     label: 'Órdenes',     icon: ClipboardList,   roles: [GERENCIA, VENTAS, OPERACIONES] },
   { path: '/despacho',    label: 'Despacho',    icon: Truck,           roles: [GERENCIA, DESPACHADOR] },
-  { path: '/incidencias', label: 'Incidencias', icon: AlertTriangle,   roles: null },
+  { path: '/incidencias', label: 'Reclamos',    icon: AlertTriangle,   roles: null },
 ];
 
 export default function NavBar() {

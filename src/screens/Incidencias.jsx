@@ -54,12 +54,12 @@ export default function Incidencias() {
   return (
     <div className="page">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-        <h1 className="page-title" style={{ margin: 0 }}>Incidencias</h1>
+        <h1 className="page-title" style={{ margin: 0 }}>Reclamos</h1>
         {abiertas > 0 && (
           <span style={{
             background: 'var(--danger)', color: '#fff',
             borderRadius: 20, padding: '2px 10px', fontSize: 12, fontWeight: 700,
-          }}>{abiertas} abiertas</span>
+          }}>{abiertas} abiertos</span>
         )}
       </div>
 
@@ -71,13 +71,15 @@ export default function Incidencias() {
             background: filtro === f ? 'var(--primary)' : 'transparent',
             borderColor: filtro === f ? 'var(--primary)' : 'var(--border)',
             color: filtro === f ? '#fff' : 'var(--text2)',
-          }}>{f}</button>
+          }}>
+            {f === 'ABIERTA' ? 'ABIERTOS' : f === 'CERRADA' ? 'CERRADOS' : 'TODOS'}
+          </button>
         ))}
       </div>
 
       {visibles.length === 0 && !loading && (
         <p className="empty">
-          {filtro === 'ABIERTA' ? '✓ Sin incidencias abiertas' : 'Sin incidencias'}
+          {filtro === 'ABIERTA' ? '✓ Sin reclamos abiertos' : 'Sin reclamos'}
         </p>
       )}
 
@@ -104,21 +106,22 @@ export default function Incidencias() {
                       ? <AlertTriangle size={14} color="var(--danger)" />
                       : <CheckCircle size={14} color="var(--success)" />}
                     <span style={{ fontWeight: 600, fontSize: 13 }}>{i.canalNombre}</span>
-                  {i.tipo && (
-                    <span style={{
-                      fontSize: 10, fontWeight: 600, padding: '1px 6px', borderRadius: 4,
-                      background: i.tipo === 'DESPACHO' ? 'var(--purple)22' :
-                                  i.tipo === 'RECHAZO'  ? 'var(--danger)22' : 'var(--warning)22',
-                      color: i.tipo === 'DESPACHO' ? 'var(--purple)' :
-                            i.tipo === 'RECHAZO'  ? 'var(--danger)'  : 'var(--warning)',
-                      border: `1px solid ${
-                        i.tipo === 'DESPACHO' ? 'var(--purple)' :
-                        i.tipo === 'RECHAZO'  ? 'var(--danger)'  : 'var(--warning)'
-                      }44`,
-                    }}>
-                      {i.tipo === 'DESPACHO' ? 'Despacho' : i.tipo === 'RECHAZO' ? 'Rechazo' : 'Entrega'}
-                    </span>
-                  )}
+                    {i.tipo && (
+                      <span style={{
+                        fontSize: 10, fontWeight: 600, padding: '1px 6px', borderRadius: 4,
+                        background: i.tipo === 'DESPACHO' ? '#8B5CF622' :
+                                    i.tipo === 'RECHAZO'  ? '#DC262622' : '#D9770622',
+                        color: i.tipo === 'DESPACHO' ? '#7C3AED' :
+                               i.tipo === 'RECHAZO'  ? '#DC2626'  : '#D97706',
+                        border: `1px solid ${
+                          i.tipo === 'DESPACHO' ? '#7C3AED' :
+                          i.tipo === 'RECHAZO'  ? '#DC2626'  : '#D97706'
+                        }44`,
+                      }}>
+                        {i.tipo === 'DESPACHO' ? 'Preparación' :
+                         i.tipo === 'RECHAZO'  ? 'Rechazo'     : 'Entrega'}
+                      </span>
+                    )}
                   </div>
                   <div style={{ fontSize: 13 }}>{i.nombre}</div>
                   <div style={{ fontSize: 12, color: 'var(--text2)', marginTop: 4 }}>
@@ -134,7 +137,7 @@ export default function Incidencias() {
                   )}
                   <div style={{ fontSize: 11, color: 'var(--text2)', marginTop: 4 }}>
                     {new Date(i.creadoEn).toLocaleDateString()}
-                    {i.cierreEn && ` · Cerrada: ${new Date(i.cierreEn).toLocaleDateString()}`}
+                    {i.cierreEn && ` · Cerrado: ${new Date(i.cierreEn).toLocaleDateString()}`}
                   </div>
                 </div>
                 {puedesCerrar && (
@@ -147,7 +150,7 @@ export default function Incidencias() {
       </div>
 
       {modal && (
-        <Modal title="Cerrar incidencia" onClose={() => setModal(null)}>
+        <Modal title="Cerrar reclamo" onClose={() => setModal(null)}>
           <div style={{ marginBottom: 16 }}>
             {getNumeroOrden(modal.ordenId) && (
               <div style={{ fontSize: 11, color: 'var(--primary)', fontWeight: 600, marginBottom: 4 }}>
@@ -170,7 +173,7 @@ export default function Incidencias() {
             onClick={cerrar}
             className="btn btn-success"
             style={{ width: '100%', justifyContent: 'center' }}>
-            <CheckCircle size={16} style={{ marginRight: 6 }} /> Marcar como cerrada
+            <CheckCircle size={16} style={{ marginRight: 6 }} /> Marcar como cerrado
           </LoadingButton>
         </Modal>
       )}

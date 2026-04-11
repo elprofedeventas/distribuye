@@ -88,13 +88,15 @@ export default function Ordenes() {
                   </div>
                   {tieneIncidencia && (
                     <div style={{ fontSize: 11, color: 'var(--danger)', marginTop: 4 }}>
-                      {incsOrden.length} incidencia{incsOrden.length > 1 ? 's' : ''} abierta{incsOrden.length > 1 ? 's' : ''} ·{' '}
-                      {incsOrden[0].tipo === 'DESPACHO' ? 'Incidencia en despacho' :
-                       incsOrden[0].tipo === 'RECHAZO' ? 'Pedido rechazado' : 'Incidencia en entrega'}
+                      {incsOrden.length} reclamo{incsOrden.length > 1 ? 's' : ''} abierto{incsOrden.length > 1 ? 's' : ''} ·{' '}
+                      {incsOrden[0].tipo === 'DESPACHO' ? 'En preparación' :
+                       incsOrden[0].tipo === 'RECHAZO'  ? 'Pedido rechazado' : 'En entrega'}
                     </div>
                   )}
                 </div>
-                <Badge label={ESTADO_LABELS[o.estado] || o.estado} color={ESTADO_COLORS[o.estado] || '#94a3b8'} />
+                <Badge
+                  label={ESTADO_LABELS[o.estado] || o.estado}
+                  color={ESTADO_COLORS[o.estado] || '#94a3b8'} />
               </div>
               {o.notas && (
                 <div style={{ fontSize: 12, color: 'var(--text2)', marginTop: 8, borderTop: '1px solid var(--border)', paddingTop: 8 }}>

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import { useApi } from '../hooks/useApi';
 import { ROLES, formatFecha, formatMonto } from '../utils/constants';
-import { AlertTriangle, ClipboardList, Truck, CheckCircle, FileEdit, Package } from 'lucide-react';
+import { AlertTriangle, ClipboardList, Truck, CheckCircle, FileEdit, Package, Warehouse } from 'lucide-react';
 
 export default function Dashboard() {
   const { usuario, alertas } = useApp();
@@ -27,35 +27,34 @@ export default function Dashboard() {
   }, []);
 
   const conteo = {
-    borradores: ordenes.filter(o => o.estado === 'BORRADOR').length,
-    confirmadas: ordenes.filter(o => o.estado === 'CONFIRMADA').length,
-    programadas: ordenes.filter(o => o.estado === 'PROGRAMADA').length,
-    despachadas: ordenes.filter(o => o.estado === 'DESPACHADA').length,
-    entregadas: ordenes.filter(o =>
-      o.estado === 'ENTREGADA' && formatFecha(o.fechaEntrega) === hoy
-    ).length,
+    pendientes:    ordenes.filter(o => o.estado === 'BORRADOR').length,
+    confirmados:   ordenes.filter(o => o.estado === 'CONFIRMADA').length,
+    preparacion:   ordenes.filter(o => o.estado === 'PROGRAMADA').length,
+    transito:      ordenes.filter(o => o.estado === 'DESPACHADA').length,
+    entregados:    ordenes.filter(o => o.estado === 'ENTREGADA' && formatFecha(o.fechaEntrega) === hoy).length,
   };
 
   const ventaHoy = ordenes
     .filter(o => o.estado === 'ENTREGADA' && formatFecha(o.fechaEntrega) === hoy)
     .reduce((sum, o) => sum + (isNaN(Number(o.total)) ? 0 : Number(o.total)), 0);
 
+  // Semáforo: Azul = info, Naranja = en movimiento, Verde = completado
   const cardsDespachador = [
-    { label: 'Por despachar', value: conteo.programadas, icon: ClipboardList, color: 'var(--warning)', path: '/despacho' },
-    { label: 'En camino', value: conteo.despachadas, icon: Truck, color: 'var(--purple)', path: '/despacho' },
-    { label: 'Entregadas hoy', value: conteo.entregadas, icon: CheckCircle, color: 'var(--success)', path: '/despacho', state: { filtro: 'ENTREGADA' } },
-    { label: 'Incidencias', value: incidenciasAbiertas, icon: AlertTriangle, color: incidenciasAbiertas > 0 ? 'var(--warning)' : 'var(--text2)', path: '/incidencias' },
-    { label: 'Alertas stock', value: alertas, icon: AlertTriangle, color: alertas > 0 ? 'var(--danger)' : 'var(--text2)', path: '/inventario' },
+    { label: 'En preparación', value: conteo.preparacion, icon: Package,       color: '#D97706', path: '/despacho' },
+    { label: 'En tránsito',    value: conteo.transito,    icon: Truck,          color: '#D97706', path: '/despacho' },
+    { label: 'Entregados hoy', value: conteo.entregados,  icon: CheckCircle,    color: '#059669', path: '/despacho', state: { filtro: 'ENTREGADA' } },
+    { label: 'Reclamos',       value: incidenciasAbiertas, icon: AlertTriangle, color: incidenciasAbiertas > 0 ? '#DC2626' : '#94a3b8', path: '/incidencias' },
+    { label: 'Reposición',     value: alertas,             icon: Warehouse,     color: alertas > 0 ? '#DC2626' : '#94a3b8', path: '/inventario' },
   ];
 
   const cardsAdmin = [
-    { label: 'Borradores', value: conteo.borradores, icon: FileEdit, color: 'var(--text2)', path: '/ordenes', state: { filtro: 'BORRADOR' } },
-    { label: 'Confirmadas', value: conteo.confirmadas, icon: ClipboardList, color: 'var(--primary)', path: '/ordenes', state: { filtro: 'CONFIRMADA' } },
-    { label: 'Por despachar', value: conteo.programadas, icon: Package, color: 'var(--warning)', path: '/despacho' },
-    { label: 'En camino', value: conteo.despachadas, icon: Truck, color: 'var(--purple)', path: '/despacho' },
-    { label: 'Entregadas hoy', value: conteo.entregadas, icon: CheckCircle, color: 'var(--success)', path: '/ordenes', state: { filtro: 'ENTREGADA' } },
-    { label: 'Incidencias', value: incidenciasAbiertas, icon: AlertTriangle, color: incidenciasAbiertas > 0 ? 'var(--warning)' : 'var(--text2)', path: '/incidencias' },
-    { label: 'Alertas stock', value: alertas, icon: AlertTriangle, color: alertas > 0 ? 'var(--danger)' : 'var(--text2)', path: '/inventario' },
+    { label: 'Pendientes',     value: conteo.pendientes,   icon: FileEdit,      color: '#94a3b8', path: '/ordenes', state: { filtro: 'BORRADOR' } },
+    { label: 'Confirmados',    value: conteo.confirmados,  icon: ClipboardList, color: '#1A56DB', path: '/ordenes', state: { filtro: 'CONFIRMADA' } },
+    { label: 'En preparación', value: conteo.preparacion,  icon: Package,       color: '#D97706', path: '/despacho' },
+    { label: 'En tránsito',    value: conteo.transito,     icon: Truck,         color: '#D97706', path: '/despacho' },
+    { label: 'Entregados hoy', value: conteo.entregados,   icon: CheckCircle,   color: '#059669', path: '/ordenes', state: { filtro: 'ENTREGADA' } },
+    { label: 'Reclamos',       value: incidenciasAbiertas, icon: AlertTriangle, color: incidenciasAbiertas > 0 ? '#DC2626' : '#94a3b8', path: '/incidencias' },
+    { label: 'Reposición',     value: alertas,             icon: Warehouse,     color: alertas > 0 ? '#DC2626' : '#94a3b8', path: '/inventario' },
   ];
 
   const esDespachador = usuario?.rol === ROLES.DESPACHADOR;
@@ -70,7 +69,7 @@ export default function Dashboard() {
       {!esDespachador && (
         <div className="card" style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div style={{ fontSize: 12, color: 'var(--text2)' }}>Venta entregada hoy</div>
-          <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--success)' }}>
+          <div style={{ fontSize: 20, fontWeight: 700, color: '#059669' }}>
             {loading ? '—' : formatMonto(ventaHoy)}
           </div>
         </div>
