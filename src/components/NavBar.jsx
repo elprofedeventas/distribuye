@@ -1,10 +1,7 @@
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import { ROLES } from '../utils/constants';
-import {
-  LayoutDashboard, Users, Package, Warehouse,
-  ClipboardList, Truck, AlertTriangle, LogOut, Tag
-} from 'lucide-react';
+import { LayoutDashboard, Users, Package, Warehouse, ClipboardList, Truck, AlertTriangle, LogOut, Tag, Target } from 'lucide-react';
 
 const { GERENCIA, VENTAS, OPERACIONES, DESPACHADOR } = ROLES;
 
@@ -14,6 +11,7 @@ const navItems = [
   { path: '/productos',   label: 'Productos',   icon: Package,         roles: [GERENCIA, VENTAS, OPERACIONES] },
   { path: '/inventario',  label: 'Reposición',  icon: Warehouse,       roles: [GERENCIA, VENTAS, OPERACIONES] },
   { path: '/precios',     label: 'Precios B2B', icon: Tag,             roles: [GERENCIA, VENTAS, OPERACIONES] },
+  { path: '/metas', label: 'Metas', icon: Target, roles: [GERENCIA] },
   { path: '/ordenes',     label: 'Órdenes',     icon: ClipboardList,   roles: [GERENCIA, VENTAS, OPERACIONES] },
   { path: '/despacho',    label: 'Despacho',    icon: Truck,           roles: [GERENCIA, DESPACHADOR] },
   { path: '/incidencias', label: 'Reclamos',    icon: AlertTriangle,   roles: null },

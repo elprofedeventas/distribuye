@@ -14,6 +14,7 @@ import ColaDespacho from './screens/ColaDespacho';
 import RegistrarEntrega from './screens/RegistrarEntrega';
 import Incidencias from './screens/Incidencias';
 import MatrizPrecios from './screens/MatrizPrecios';
+import Metas from './screens/Metas';
 
 const { GERENCIA, VENTAS, OPERACIONES, DESPACHADOR } = ROLES;
 const TODOS = [GERENCIA, VENTAS, OPERACIONES, DESPACHADOR];
@@ -57,6 +58,12 @@ export default function App() {
         <Route path="precios" element={
           <ProtectedRoute roles={[GERENCIA, VENTAS, OPERACIONES]}>
             <MatrizPrecios />
+          </ProtectedRoute>
+        } />
+
+        <Route path="metas" element={
+          <ProtectedRoute roles={[GERENCIA]}>
+            <Metas />
           </ProtectedRoute>
         } />
 
