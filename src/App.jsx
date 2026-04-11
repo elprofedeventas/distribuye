@@ -19,7 +19,6 @@ const { GERENCIA, VENTAS, OPERACIONES, DESPACHADOR } = ROLES;
 const TODOS = [GERENCIA, VENTAS, OPERACIONES, DESPACHADOR];
 const PUEDE_EDITAR = [VENTAS, OPERACIONES];
 const CON_DESPACHO = [GERENCIA, DESPACHADOR];
-const SIN_DESPACHO = [GERENCIA, VENTAS, OPERACIONES];
 
 function ProtectedRoute({ children, roles }) {
   const { usuario } = useApp();
@@ -37,64 +36,60 @@ export default function App() {
       }>
         <Route index element={<Dashboard />} />
 
-        {/* Clientes */}
         <Route path="canales" element={
           <ProtectedRoute roles={[...PUEDE_EDITAR, GERENCIA]}>
             <Canales />
           </ProtectedRoute>
         } />
 
-        {/* Productos */}
         <Route path="productos" element={
           <ProtectedRoute roles={[...PUEDE_EDITAR, GERENCIA]}>
             <Productos />
           </ProtectedRoute>
         } />
 
-        {/* Inventario */}
         <Route path="inventario" element={
           <ProtectedRoute roles={[...PUEDE_EDITAR, GERENCIA]}>
             <Inventario />
           </ProtectedRoute>
         } />
 
-        // Dentro de las rutas, después de /inventario:
         <Route path="precios" element={
-          <ProtectedRoute roles={[ROLES.GERENCIA, ROLES.VENTAS, ROLES.OPERACIONES]}>
+          <ProtectedRoute roles={[GERENCIA, VENTAS, OPERACIONES]}>
             <MatrizPrecios />
           </ProtectedRoute>
         } />
 
-        {/* Órdenes */}
         <Route path="ordenes" element={
           <ProtectedRoute roles={[...PUEDE_EDITAR, GERENCIA]}>
             <Ordenes />
           </ProtectedRoute>
         } />
+
         <Route path="ordenes/nueva" element={
           <ProtectedRoute roles={PUEDE_EDITAR}>
             <NuevaOrden />
           </ProtectedRoute>
         } />
+
         <Route path="ordenes/:id" element={
           <ProtectedRoute roles={[...PUEDE_EDITAR, GERENCIA]}>
             <OrdenDetalle />
           </ProtectedRoute>
         } />
 
-        {/* Despacho */}
         <Route path="despacho" element={
           <ProtectedRoute roles={CON_DESPACHO}>
             <ColaDespacho />
           </ProtectedRoute>
         } />
+
         <Route path="despacho/:id/entrega" element={
           <ProtectedRoute roles={[DESPACHADOR]}>
             <RegistrarEntrega />
           </ProtectedRoute>
         } />
 
-        {/* Incidencias */}
         <Route path="incidencias" element={
           <ProtectedRoute roles={TODOS}>
             <Incidencias />
