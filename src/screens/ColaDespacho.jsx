@@ -15,6 +15,7 @@ export default function ColaDespacho() {
   const [despachando, setDespachando] = useState(null);
   const [detalle, setDetalle] = useState([]);
   const [cantidades, setCantidades] = useState({});
+  const [lotesSugeridos, setLotesSugeridos] = useState({});
 
   const soloLectura = usuario?.rol === ROLES.GERENCIA;
 
@@ -31,6 +32,12 @@ export default function ColaDespacho() {
     const init = {};
     (det || []).forEach(d => { init[d.id] = d.cantPedida; });
     setCantidades(init);
+    const lotesMap = {};
+    for (const d of det || []) {
+      const lotes = await call('getLotes', { productoId: d.productoId });
+      if (lotes && lotes.length > 0) lotesMap[d.productoId] = lotes[0];
+    }
+    setLotesSugeridos(lotesMap);
     setDespachando(orden);
   };
 
@@ -83,18 +90,29 @@ export default function ColaDespacho() {
           {detalle.map(d => {
             const cantIngresada = Number(cantidades[d.id] ?? d.cantPedida);
             const tieneIncidencia = cantIngresada < Number(d.cantPedida);
+            const loteSugerido = lotesSugeridos[d.productoId];
             return (
               <div key={d.id} className="card"
                 style={{ borderColor: tieneIncidencia ? 'var(--danger)' : 'var(--border)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                  <div>
+                  <div style={{ flex: 1 }}>
                     <div style={{ fontWeight: 500 }}>{d.nombre}</div>
                     <div style={{ fontSize: 12, color: 'var(--text2)' }}>SKU: {d.sku} · {d.unidad}</div>
                     <div style={{ fontSize: 12, color: 'var(--text2)', marginTop: 2 }}>
                       Pedido: <strong>{d.cantPedida}</strong>
                     </div>
+                    {loteSugerido && (
+                      <div style={{
+                        fontSize: 11, marginTop: 6, padding: '4px 8px',
+                        background: '#D9770622', borderRadius: 4,
+                        color: 'var(--warning)', fontWeight: 600,
+                      }}>
+                        📦 Despachar lote: {loteSugerido.lote}
+                        {' · Vence: '}{formatFecha(loteSugerido.fechaVencimiento)}
+                      </div>
+                    )}
                     {tieneIncidencia && (
-                      <div style={{ fontSize: 12, color: 'var(--danger)', marginTop: 2, display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <div style={{ fontSize: 12, color: 'var(--danger)', marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
                         <AlertTriangle size={12} />
                         Diferencia: {Number(d.cantPedida) - cantIngresada}
                       </div>
@@ -104,7 +122,7 @@ export default function ColaDespacho() {
                     type="number" min={0} max={d.cantPedida}
                     value={cantidades[d.id] ?? d.cantPedida}
                     onChange={e => setCantidades(c => ({ ...c, [d.id]: e.target.value }))}
-                    style={{ width: 80, textAlign: 'center',
+                    style={{ width: 80, textAlign: 'center', marginLeft: 12,
                       borderColor: tieneIncidencia ? 'var(--danger)' : 'var(--border)' }}
                   />
                 </div>
@@ -233,9 +251,7 @@ function OrdenCard({ o, onDespachar, onEntrega, call, navigate, soloLectura }) {
             </LoadingButton>
           )}
           {onEntrega && (
-            <LoadingButton
-              onClick={onEntrega}
-              className="btn"
+            <LoadingButton onClick={onEntrega} className="btn"
               style={{ flex: 1, justifyContent: 'center', background: 'var(--warning)', color: '#fff' }}>
               <PackageCheck size={14} style={{ marginRight: 6 }} /> Registrar entrega
             </LoadingButton>

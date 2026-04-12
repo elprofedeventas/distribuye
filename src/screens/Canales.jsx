@@ -8,7 +8,7 @@ import { Plus, Pencil, Search } from 'lucide-react';
 
 const empty = {
   nombre: '', ruc: '', direccion: '', telefono: '',
-  contacto: '', whatsapp: '', zona: '', ciudad: '', tipoCliente: ''
+  contacto: '', whatsapp: '', zona: '', ciudad: '', tipoCliente: '', diasCredito: '0'
 };
 
 const str = (v) => (v === undefined || v === null) ? '' : String(v);
@@ -107,6 +107,11 @@ export default function Canales() {
               <div style={{ fontSize: 12, color: 'var(--text2)' }}>{str(c.direccion)}</div>
               {c.telefono && <div style={{ fontSize: 12, color: 'var(--text2)' }}>Tel: {str(c.telefono)}</div>}
               {c.whatsapp && <div style={{ fontSize: 12, color: 'var(--success)' }}>📱 {str(c.whatsapp)}</div>}
+              {c.diasCredito && Number(c.diasCredito) > 0 && (
+                <div style={{ fontSize: 12, color: 'var(--primary)', marginTop: 2 }}>
+                  Crédito: {str(c.diasCredito)} días
+                </div>
+              )}
             </div>
             {!soloLectura && (
               <button className="btn btn-ghost" style={{ padding: '6px 10px' }} onClick={() => openEdit(c)}>
@@ -145,6 +150,14 @@ export default function Canales() {
             <input value={form.whatsapp} onChange={e => set('whatsapp', e.target.value)} inputMode="numeric" /></div>
           <div className="form-group"><label>Zona</label>
             <input value={form.zona} onChange={e => set('zona', e.target.value)} /></div>
+          <div className="form-group"><label>Días de crédito</label>
+            <select value={form.diasCredito || '0'} onChange={e => set('diasCredito', e.target.value)}>
+              <option value="0">Pago inmediato</option>
+              <option value="30">30 días</option>
+              <option value="60">60 días</option>
+              <option value="90">90 días</option>
+            </select>
+          </div>
           <LoadingButton onClick={save} style={{ width: '100%', justifyContent: 'center' }}>
             {editId ? 'Guardar cambios' : 'Crear cliente'}
           </LoadingButton>

@@ -6,10 +6,8 @@ import { ROLES, formatFecha, formatMonto } from '../utils/constants';
 import {
   AlertTriangle, ClipboardList, Truck, CheckCircle,
   FileEdit, Package, Warehouse, TrendingUp, DollarSign,
-  BarChart2, ShieldAlert, Target
+  BarChart2, ShieldAlert, CreditCard
 } from 'lucide-react';
-
-const MESES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
 
 function MiniBar({ value, max, color }) {
   const pct = max > 0 ? Math.min((value / max) * 100, 100) : 0;
@@ -47,6 +45,7 @@ export default function Dashboard() {
   const [incidencias, setIncidencias] = useState([]);
   const [inventario, setInventario] = useState([]);
   const [metas, setMetas] = useState([]);
+  const [cartera, setCartera] = useState({ pendiente: 0, vencido: 0 });
   const [loading, setLoading] = useState(true);
   const [periodo, setPeriodo] = useState('mes');
 
@@ -61,16 +60,17 @@ export default function Dashboard() {
       call('getIncidencias'),
       call('getInventario'),
       call('getMetas'),
-    ]).then(([ords, incs, inv, met]) => {
+      call('getCarteraResumen'),
+    ]).then(([ords, incs, inv, met, cart]) => {
       setOrdenes(ords || []);
       setIncidencias(incs || []);
       setInventario(inv || []);
       setMetas(met || []);
+      setCartera(cart || { pendiente: 0, vencido: 0 });
       setLoading(false);
     }).catch(() => setLoading(false));
   }, []);
 
-  // ── FILTRO DE PERIODO ────────────────────────────────────────────────────
   const filtrarPorPeriodo = (ords) => {
     return ords.filter(o => {
       if (o.estado !== 'ENTREGADA' || !o.fechaEntrega) return false;
@@ -89,21 +89,16 @@ export default function Dashboard() {
 
   const ordenesEntregadas = filtrarPorPeriodo(ordenes);
 
-  // ── KPIs FINANCIEROS ─────────────────────────────────────────────────────
   const ventaB2B = ordenesEntregadas.reduce((s, o) => s + (isNaN(Number(o.subtotal)) ? 0 : Number(o.subtotal)), 0);
-  const ventaB2C = 0; // Canal digital fase 2
+  const ventaB2C = 0;
   const ventaTotal = ventaB2B + ventaB2C;
   const ivaTotal = ordenesEntregadas.reduce((s, o) => s + (isNaN(Number(o.iva)) ? 0 : Number(o.iva)), 0);
+  const ticketPromedio = ordenesEntregadas.length > 0 ? ventaTotal / ordenesEntregadas.length : 0;
 
-  const ticketPromedio = ordenesEntregadas.length > 0
-    ? ventaTotal / ordenesEntregadas.length : 0;
-
-  // Meta del mes actual
   const metaB2B = metas.find(m => String(m.año) === String(añoActual) && String(m.mes) === String(mesActual) && m.canalTipo === 'B2B');
   const metaB2C = metas.find(m => String(m.año) === String(añoActual) && String(m.mes) === String(mesActual) && m.canalTipo === 'B2C');
   const metaTotalMes = (metaB2B ? Number(metaB2B.meta) : 0) + (metaB2C ? Number(metaB2C.meta) : 0);
 
-  // Venta del mes actual siempre (para run rate)
   const ventaMesActual = ordenes
     .filter(o => o.estado === 'ENTREGADA' && o.fechaEntrega)
     .filter(o => {
@@ -113,20 +108,16 @@ export default function Dashboard() {
     .reduce((s, o) => s + (isNaN(Number(o.subtotal)) ? 0 : Number(o.subtotal)), 0);
 
   const pctMeta = metaTotalMes > 0 ? (ventaMesActual / metaTotalMes) * 100 : 0;
-
-  // Run rate — proyección de cierre del mes
   const diasDelMes = new Date(añoActual, mesActual, 0).getDate();
   const diaActual = hoy.getDate();
   const runRate = diaActual > 0 ? (ventaMesActual / diaActual) * diasDelMes : 0;
 
-  // ── KPIs OPERATIVOS ──────────────────────────────────────────────────────
   const ordenesEntregadasMes = ordenes.filter(o =>
     o.estado === 'ENTREGADA' && o.fechaEntrega &&
     new Date(o.fechaEntrega).getMonth() + 1 === mesActual &&
     new Date(o.fechaEntrega).getFullYear() === añoActual
   );
 
-  // OTIF
   const otifTotal = ordenesEntregadasMes.length;
   const otifOk = ordenesEntregadasMes.filter(o => {
     const onTime = o.fechaDespacho && o.fechaEntrega &&
@@ -136,45 +127,32 @@ export default function Dashboard() {
   }).length;
   const otifPct = otifTotal > 0 ? Math.round((otifOk / otifTotal) * 100) : 100;
 
-  // DOH — días de inventario
   const salidaDiaria = ordenes
     .filter(o => o.estado === 'ENTREGADA' && o.fechaEntrega)
-    .filter(o => {
-      const f = new Date(o.fechaEntrega);
-      return f.getFullYear() === añoActual;
-    }).length / Math.max(diaActual, 1);
+    .filter(o => new Date(o.fechaEntrega).getFullYear() === añoActual).length / Math.max(diaActual, 1);
 
   const dohPromedio = salidaDiaria > 0
-    ? Math.round(inventario.reduce((s, i) => s + Number(i.stockActual || 0), 0) /
-        inventario.length / salidaDiaria)
+    ? Math.round(inventario.reduce((s, i) => s + Number(i.stockActual || 0), 0) / inventario.length / salidaDiaria)
     : 0;
 
-  // Órdenes del día
   const ordenesDia = ordenes.filter(o => formatFecha(o.creadoEn) === hoyStr).length;
 
-  // ── KPIs CALIDAD ─────────────────────────────────────────────────────────
-  // Order Accuracy Rate
   const totalMes = ordenesEntregadasMes.length;
   const conReclamos = ordenesEntregadasMes.filter(o =>
     incidencias.some(i => i.ordenId === o.id)
   ).length;
-  const accuracyRate = totalMes > 0
-    ? Math.round(((totalMes - conReclamos) / totalMes) * 100) : 100;
-
-  // Reclamos abiertos
+  const accuracyRate = totalMes > 0 ? Math.round(((totalMes - conReclamos) / totalMes) * 100) : 100;
   const reclamosAbiertos = incidencias.filter(i => i.estado === 'ABIERTA').length;
   const pctReclamos = totalMes > 0 ? ((conReclamos / totalMes) * 100).toFixed(1) : '0';
 
-  // ── CONTEO ESTADOS (para despachador y cards operativas) ─────────────────
   const conteo = {
-    pendientes:  ordenes.filter(o => o.estado === 'BORRADOR').length,
-    confirmados: ordenes.filter(o => o.estado === 'CONFIRMADA').length,
-    preparacion: ordenes.filter(o => o.estado === 'PROGRAMADA').length,
-    transito:    ordenes.filter(o => o.estado === 'DESPACHADA').length,
+    pendientes:    ordenes.filter(o => o.estado === 'BORRADOR').length,
+    confirmados:   ordenes.filter(o => o.estado === 'CONFIRMADA').length,
+    preparacion:   ordenes.filter(o => o.estado === 'PROGRAMADA').length,
+    transito:      ordenes.filter(o => o.estado === 'DESPACHADA').length,
     entregadosHoy: ordenes.filter(o => o.estado === 'ENTREGADA' && formatFecha(o.fechaEntrega) === hoyStr).length,
   };
 
-  // ── DASHBOARD DESPACHADOR ─────────────────────────────────────────────────
   const esDespachador = usuario?.rol === ROLES.DESPACHADOR;
 
   if (esDespachador) {
@@ -194,7 +172,6 @@ export default function Dashboard() {
     );
   }
 
-  // ── DASHBOARD ADMIN / VENTAS / OPERACIONES ────────────────────────────────
   return (
     <div className="page">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
@@ -221,7 +198,6 @@ export default function Dashboard() {
         A · Financiero
       </div>
 
-      {/* Venta vs Meta */}
       <div className="card" style={{ marginBottom: 12 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
           <div>
@@ -274,12 +250,13 @@ export default function Dashboard() {
           icon={DollarSign}
         />
         <KpiCard
-          label="ÓRDENES HOY"
-          value={ordenesDia}
-          sub="creadas hoy"
-          color="#0891B2"
-          icon={ClipboardList}
-          onClick={() => navigate('/ordenes')}
+          label="CARTERA PENDIENTE"
+          value={formatMonto(cartera.pendiente)}
+          sub={cartera.vencido > 0 ? `⚠ Vencido: ${formatMonto(cartera.vencido)}` : 'Al día'}
+          color={cartera.vencido > 0 ? '#DC2626' : '#1A56DB'}
+          icon={CreditCard}
+          alerta={cartera.vencido > 0}
+          onClick={() => navigate('/cartera')}
         />
       </div>
 
@@ -294,9 +271,7 @@ export default function Dashboard() {
           <div style={{ fontSize: 26, fontWeight: 700, color: otifPct >= 90 ? '#059669' : otifPct >= 70 ? '#D97706' : '#DC2626' }}>
             {loading ? '—' : `${otifPct}%`}
           </div>
-          <div style={{ fontSize: 11, color: 'var(--text2)', marginTop: 2 }}>
-            {otifOk} de {otifTotal} órdenes
-          </div>
+          <div style={{ fontSize: 11, color: 'var(--text2)', marginTop: 2 }}>{otifOk} de {otifTotal} órdenes</div>
           <MiniBar value={otifOk} max={otifTotal} color={otifPct >= 90 ? '#059669' : otifPct >= 70 ? '#D97706' : '#DC2626'} />
         </div>
 
@@ -309,20 +284,8 @@ export default function Dashboard() {
           <MiniBar value={Math.min(dohPromedio, 30)} max={30} color={dohPromedio > 15 ? '#059669' : dohPromedio > 7 ? '#D97706' : '#DC2626'} />
         </div>
 
-        <KpiCard
-          label="EN PREPARACIÓN"
-          value={conteo.preparacion}
-          color="#D97706"
-          icon={Package}
-          onClick={() => navigate('/despacho')}
-        />
-        <KpiCard
-          label="EN TRÁNSITO"
-          value={conteo.transito}
-          color="#D97706"
-          icon={Truck}
-          onClick={() => navigate('/despacho')}
-        />
+        <KpiCard label="EN PREPARACIÓN" value={conteo.preparacion} color="#D97706" icon={Package} onClick={() => navigate('/despacho')} />
+        <KpiCard label="EN TRÁNSITO" value={conteo.transito} color="#D97706" icon={Truck} onClick={() => navigate('/despacho')} />
       </div>
 
       {/* ── C. DIMENSIÓN CALIDAD ── */}
@@ -361,11 +324,12 @@ export default function Dashboard() {
         />
 
         <KpiCard
-          label="PENDIENTES"
-          value={conteo.pendientes}
-          color="#94a3b8"
-          icon={FileEdit}
-          onClick={() => navigate('/ordenes', { state: { filtro: 'BORRADOR' } })}
+          label="ÓRDENES HOY"
+          value={ordenesDia}
+          sub="creadas hoy"
+          color="#0891B2"
+          icon={ClipboardList}
+          onClick={() => navigate('/ordenes')}
         />
       </div>
 

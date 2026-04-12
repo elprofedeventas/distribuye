@@ -15,6 +15,7 @@ import RegistrarEntrega from './screens/RegistrarEntrega';
 import Incidencias from './screens/Incidencias';
 import MatrizPrecios from './screens/MatrizPrecios';
 import Metas from './screens/Metas';
+import Cartera from './screens/Cartera';
 
 const { GERENCIA, VENTAS, OPERACIONES, DESPACHADOR } = ROLES;
 const TODOS = [GERENCIA, VENTAS, OPERACIONES, DESPACHADOR];
@@ -100,6 +101,12 @@ export default function App() {
         <Route path="incidencias" element={
           <ProtectedRoute roles={TODOS}>
             <Incidencias />
+          </ProtectedRoute>
+        } />
+
+        <Route path="cartera" element={
+          <ProtectedRoute roles={[GERENCIA, VENTAS, OPERACIONES]}>
+            <Cartera />
           </ProtectedRoute>
         } />
       </Route>
