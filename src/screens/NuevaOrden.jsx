@@ -22,14 +22,12 @@ export default function NuevaOrden() {
     call('getProductos').then(d => setProductos(d || []));
   }, []);
 
-  // Cargar precios del cliente cuando cambia el canal
   useEffect(() => {
     if (!canalId) { setMatrizPrecios([]); return; }
-    call('getPreciosCliente', { clienteId: canalId })
-      .then(d => setMatrizPrecios(d || []));
+    call('getPreciosCliente', { clienteId: canalId }).then(d => setMatrizPrecios(d || []));
   }, [canalId]);
 
-  const addLinea = () => setLineas(l => [...l, { productoId: '', cantidad: 1 }]);
+  const addLinea = () => setLineas(l => [...l, { productoId: '', cajas: 1 }]);
   const setLinea = (i, k, v) => setLineas(l => l.map((x, j) => j === i ? { ...x, [k]: v } : x));
   const removeLinea = (i) => setLineas(l => l.filter((_, j) => j !== i));
   const getProducto = (id) => productos.find(p => p.id === id);
@@ -37,19 +35,23 @@ export default function NuevaOrden() {
   const getPrecioFinal = (productoId, pvp) => {
     const precio = matrizPrecios.find(p => p.productoId === productoId);
     if (precio && precio.precioLista) {
-      return { precioFinal: Number(precio.precioLista), descuento: Number(precio.descuento || 0) };
+      return { precioFinal: Number(precio.precioLista), descuento: 0 };
     }
     return { precioFinal: Number(pvp), descuento: 0 };
   };
 
   const calcularLinea = (l) => {
     const p = getProducto(l.productoId);
-    if (!p) return { subtotal: 0, iva: 0, total: 0, precioFinal: 0, descuento: 0 };
-    const { precioFinal, descuento } = getPrecioFinal(p.id, p.precio);
+    if (!p) return { subtotal: 0, iva: 0, total: 0, precioFinal: 0, precioCaja: 0, unidades: 0 };
+    const { precioFinal } = getPrecioFinal(p.id, p.precio);
+    const unidadesCaja = Number(p.unidadesCaja || 1);
+    const cajas = Number(l.cajas || 0);
+    const unidades = cajas * unidadesCaja;
     const ivaRate = Number(p.ivaRate ?? 0.15);
-    const subtotal = precioFinal * Number(l.cantidad);
+    const subtotal = precioFinal * unidades;
     const iva = subtotal * ivaRate;
-    return { subtotal, iva, total: subtotal + iva, precioFinal, descuento, ivaRate };
+    const precioCaja = precioFinal * unidadesCaja;
+    return { subtotal, iva, total: subtotal + iva, precioFinal, precioCaja, unidades, ivaRate };
   };
 
   const totales = lineas.reduce((acc, l) => {
@@ -63,12 +65,17 @@ export default function NuevaOrden() {
     const detalle = lineas.map(l => {
       const p = getProducto(l.productoId);
       const { precioFinal, descuento } = getPrecioFinal(p.id, p.precio);
+      const unidadesCaja = Number(p.unidadesCaja || 1);
+      const cajas = Number(l.cajas || 0);
+      const unidades = cajas * unidadesCaja;
       return {
         productoId: p.id, sku: p.sku, nombre: p.nombre,
-        unidad: p.unidad, precio: p.precio,
+        unidad: 'caja', precio: p.precio,
         precioFinal, descuento,
         ivaRate: Number(p.ivaRate ?? 0.15),
-        cantPedida: Number(l.cantidad),
+        cantPedida: cajas,        // cajas pedidas
+        cantUnidades: unidades,   // unidades equivalentes
+        unidadesCaja,
       };
     });
     const result = await call('createOrden', {
@@ -91,9 +98,7 @@ export default function NuevaOrden() {
         <label>Cliente *</label>
         <select value={canalId} onChange={e => setCanalId(e.target.value)}>
           <option value="">— Seleccionar cliente —</option>
-          {canales.map(c => (
-            <option key={c.id} value={c.id}>{c.nombre}</option>
-          ))}
+          {canales.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
         </select>
       </div>
 
@@ -123,38 +128,53 @@ export default function NuevaOrden() {
             <div key={i} className="card">
               <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
                 <div style={{ flex: 1 }}>
-                  <select value={l.productoId} onChange={e => setLinea(i, 'productoId', e.target.value)}
+                  <select value={l.productoId}
+                    onChange={e => setLinea(i, 'productoId', e.target.value)}
                     style={{ marginBottom: 8 }}>
                     <option value="">— Producto —</option>
                     {productos.map(p => (
-                      <option key={p.id} value={p.id}>{p.nombre} ({p.sku})</option>
+                      <option key={p.id} value={p.id}>
+                        {p.nombre} ({p.sku})
+                      </option>
                     ))}
                   </select>
+
+                  {p && (
+                    <div style={{ fontSize: 11, color: 'var(--text2)', marginBottom: 8 }}>
+                      Caja de {p.unidadesCaja} unidades ·{' '}
+                      Precio lista: {formatMonto(calc.precioFinal)}/und ·{' '}
+                      {formatMonto(calc.precioCaja)}/caja
+                    </div>
+                  )}
+
                   <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                    <input type="number" min={1} value={l.cantidad}
-                      onChange={e => setLinea(i, 'cantidad', e.target.value)}
-                      style={{ width: 80 }} />
-                    {p && <span style={{ fontSize: 12, color: 'var(--text2)' }}>{p.unidad}</span>}
+                    <input
+                      type="number" min={1} value={l.cajas}
+                      onChange={e => setLinea(i, 'cajas', e.target.value)}
+                      style={{ width: 80 }}
+                    />
+                    <span style={{ fontSize: 12, color: 'var(--text2)' }}>cajas</span>
+                    {p && (
+                      <span style={{ fontSize: 12, color: 'var(--text2)' }}>
+                        = {calc.unidades} unidades
+                      </span>
+                    )}
                   </div>
+
                   {p && (
                     <div style={{ marginTop: 8, fontSize: 12 }}>
-                      {calc.descuento > 0 && (
-                        <div style={{ color: 'var(--success)', marginBottom: 2 }}>
-                          Precio B2B: {formatMonto(calc.precioFinal)}
-                          <span style={{ color: 'var(--text2)', marginLeft: 6 }}>
-                            ({calc.descuento}% desc. sobre {formatMonto(p.precio)})
-                          </span>
-                        </div>
-                      )}
-                      <div style={{ color: 'var(--text2)' }}>
+                      <span style={{ color: 'var(--text2)' }}>
                         Subtotal: {formatMonto(calc.subtotal)} +
                         IVA {((calc.ivaRate || 0) * 100).toFixed(0)}%: {formatMonto(calc.iva)} =
-                        <strong style={{ color: 'var(--text)', marginLeft: 4 }}>{formatMonto(calc.total)}</strong>
-                      </div>
+                      </span>
+                      <strong style={{ color: 'var(--text)', marginLeft: 4 }}>
+                        {formatMonto(calc.total)}
+                      </strong>
                     </div>
                   )}
                 </div>
-                <button className="btn btn-ghost" style={{ padding: '6px 10px' }} onClick={() => removeLinea(i)}>
+                <button className="btn btn-ghost" style={{ padding: '6px 10px' }}
+                  onClick={() => removeLinea(i)}>
                   <Trash2 size={14} color="var(--danger)" />
                 </button>
               </div>
@@ -180,8 +200,7 @@ export default function NuevaOrden() {
         </div>
       )}
 
-      <LoadingButton
-        onClick={save}
+      <LoadingButton onClick={save}
         style={{ width: '100%', justifyContent: 'center' }}
         disabled={!canalId || lineas.length === 0}>
         Crear orden
