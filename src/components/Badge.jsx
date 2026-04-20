@@ -9,7 +9,18 @@ export default function Badge({ label, color }) {
       fontSize: 11,
       fontWeight: 600,
       letterSpacing: 0.5,
+      display: 'inline-flex',
+      alignItems: 'center',
+      gap: 5,
     }}>
+      <span style={{
+        width: 8,
+        height: 8,
+        borderRadius: '50%',
+        background: color,
+        flexShrink: 0,
+        display: 'inline-block',
+      }} />
       {label}
     </span>
   );
