@@ -71,7 +71,7 @@ export default function NuevaOrden() {
         cantPedida: Number(l.cantidad),
       };
     });
-    await call('createOrden', {
+    const result = await call('createOrden', {
       orden: {
         canalId, canalNombre: canal.nombre,
         ruc: canal.ruc || '',
@@ -80,7 +80,7 @@ export default function NuevaOrden() {
       },
       detalle,
     });
-    navigate('/ordenes');
+    navigate(`/ordenes/${result.ordenId}`);
   };
 
   return (
