@@ -318,7 +318,8 @@ export default function OrdenDetalle() {
           const incDet = incidencias.find(i => i.productoId === d.productoId && i.estado === 'ABIERTA');
           const precioFinal = Number(d.precioFinal || d.precio);
           const ivaRate = Number(d.ivaRate ?? 0.15);
-          const subtotalLinea = precioFinal * Number(d.cantPedida);
+          const cantUnidades = Number(d.cantUnidades || d.cantPedida);
+          const subtotalLinea = precioFinal * cantUnidades;
           const ivaLinea = subtotalLinea * ivaRate;
           return (
             <div key={d.id} className="card" style={{ borderColor: incDet ? 'var(--danger)' : 'var(--border)' }}>
@@ -336,7 +337,14 @@ export default function OrdenDetalle() {
                   )}
                 </div>
                 <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontWeight: 600 }}>×{d.cantPedida}</div>
+                  <div style={{ fontWeight: 600 }}>
+                    {d.cantPedida} caja{Number(d.cantPedida) > 1 ? 's' : ''}
+                    {d.cantUnidades && (
+                      <span style={{ fontSize: 11, fontWeight: 400, color: 'var(--text2)', marginLeft: 6 }}>
+                        ({d.cantUnidades} und.)
+                      </span>
+                    )}
+                  </div>
                   <div style={{ fontSize: 12, color: 'var(--text2)' }}>{formatMonto(precioFinal)} c/u</div>
                   <div style={{ fontSize: 11, color: 'var(--text2)' }}>
                     +IVA {(ivaRate * 100).toFixed(0)}%: {formatMonto(ivaLinea)}
