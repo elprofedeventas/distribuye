@@ -36,8 +36,8 @@ export default function NuevaOrden() {
 
   const getPrecioFinal = (productoId, pvp) => {
     const precio = matrizPrecios.find(p => p.productoId === productoId);
-    if (precio && precio.precioB2B) {
-      return { precioFinal: Number(precio.precioB2B), descuento: Number(precio.descuento || 0) };
+    if (precio && precio.precioLista) {
+      return { precioFinal: Number(precio.precioLista), descuento: Number(precio.descuento || 0) };
     }
     return { precioFinal: Number(pvp), descuento: 0 };
   };
