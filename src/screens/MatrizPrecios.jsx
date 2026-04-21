@@ -129,21 +129,26 @@ export default function MatrizPrecios() {
                         )}
                       </div>
                       <div style={{ fontSize: 12, color: 'var(--text2)' }}>SKU: {p.sku}</div>
-                      <div style={{ fontSize: 12, marginTop: 6, display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                      <div style={{ fontSize: 12, marginTop: 6 }}>
                         {prod && (
-                          <span style={{ color: 'var(--text2)' }}>
+                          <div style={{ color: 'var(--text2)', marginBottom: 4 }}>
                             PVP: {formatMonto(pvp)} unidad · {formatMonto(pvp * unidadesCaja)} caja
-                          </span>
+                          </div>
                         )}
-                        <span style={{ color: 'var(--success)', fontWeight: 600 }}>
-                          Lista: {formatMonto(p.precioLista)} unidad
-                        </span>
-                        <span style={{ color: 'var(--primary)', fontWeight: 700 }}>
-                          {formatMonto(precioCaja)} caja
-                        </span>
-                        <span style={{ color: 'var(--warning)', fontSize: 11 }}>
-                          {dto}% dto.
-                        </span>
+                        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+                          <span style={{ color: 'var(--success)', fontWeight: 700, textTransform: 'uppercase', fontSize: 11 }}>
+                            Lista:
+                          </span>
+                          <span style={{ color: 'var(--success)', fontWeight: 600 }}>
+                            {formatMonto(p.precioLista)} unidad
+                          </span>
+                          <span style={{ color: 'var(--primary)', fontWeight: 700 }}>
+                            {formatMonto(precioCaja)} caja
+                          </span>
+                          <span style={{ color: 'var(--warning)', fontSize: 11 }}>
+                            {dto}% dto.
+                          </span>
+                        </div>
                       </div>
                     </div>
                     <div style={{ display: 'flex', gap: 6 }}>
