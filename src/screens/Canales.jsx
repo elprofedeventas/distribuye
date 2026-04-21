@@ -353,11 +353,6 @@ export default function Canales() {
               }}
               placeholder="Ej: $100.000"
             />
-            {form.cupoCredito && Number(form.cupoCredito) > 0 && (
-              <div style={{ fontSize: 11, color: 'var(--text2)', marginTop: 4 }}>
-                = {formatCupo(form.cupoCredito)}
-              </div>
-            )}
           </Field>
           <Field label="Riesgo crediticio" color={C.comercial}>
             <select value={form.riesgoCredito} onChange={e => set('riesgoCredito', e.target.value)}>
