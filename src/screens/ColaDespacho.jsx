@@ -224,18 +224,16 @@ function OrdenCard({ o, onDespachar, onEntrega, call, navigate, soloLectura }) {
       {expanded && detalle.length > 0 && (
         <div style={{ borderTop: '1px solid var(--border)', paddingTop: 10, marginBottom: 10 }}>
           {detalle.map(d => (
-            <div key={d.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 6 }}>
-              <div>
-                <span style={{ fontWeight: 500 }}>{d.nombre}</span>
-                <span style={{ color: 'var(--text2)', marginLeft: 6 }}>SKU: {d.sku}</span>
-              </div>
-              <div style={{ textAlign: 'right' }}>
-                <span style={{ color: 'var(--text2)' }}>Pedido: {d.cantPedida}</span>
+            <div key={d.id} style={{ fontSize: 12, marginBottom: 10 }}>
+              <div style={{ fontWeight: 500 }}>{d.nombre}</div>
+              <div style={{ color: 'var(--text2)' }}>SKU: {d.sku}</div>
+              <div style={{ marginTop: 2 }}>
+                <span style={{ color: 'var(--text2)' }}>Pedido: <strong>{d.cantPedida} cajas</strong></span>
                 {Number(d.cantDespachada) > 0 && (
-                  <span style={{ color: 'var(--purple)', marginLeft: 8 }}>Desp: {d.cantDespachada}</span>
+                  <span style={{ color: 'var(--purple)', marginLeft: 8 }}>Desp: {d.cantDespachada} cajas</span>
                 )}
                 {Number(d.cantEntregada) > 0 && (
-                  <span style={{ color: 'var(--success)', marginLeft: 8 }}>Ent: {d.cantEntregada}</span>
+                  <span style={{ color: 'var(--success)', marginLeft: 8 }}>Ent: {d.cantEntregada} cajas</span>
                 )}
               </div>
             </div>
