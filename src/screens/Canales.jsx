@@ -345,10 +345,13 @@ export default function Canales() {
           </Field>
           <Field label="Cupo de crédito (USD)" color={C.comercial}>
             <input
-              type="number"
-              value={form.cupoCredito}
-              onChange={e => set('cupoCredito', e.target.value)}
-              placeholder="Ej: 100000"
+              type="text"
+              value={form.cupoCredito ? formatCupo(form.cupoCredito) : ''}
+              onChange={e => {
+                const raw = e.target.value.replace(/[^0-9]/g, '');
+                set('cupoCredito', raw);
+              }}
+              placeholder="Ej: $100.000"
             />
             {form.cupoCredito && Number(form.cupoCredito) > 0 && (
               <div style={{ fontSize: 11, color: 'var(--text2)', marginTop: 4 }}>
