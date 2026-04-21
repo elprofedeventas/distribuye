@@ -19,6 +19,12 @@ const empty = {
 
 const str = (v) => (v === undefined || v === null) ? '' : String(v);
 
+const formatCupo = (v) => {
+  const n = Number(v);
+  if (!n || n === 0) return '';
+  return n.toLocaleString('es-EC', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 });
+};
+
 const SectionHeader = ({ label, color }) => (
   <div style={{
     fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase',
@@ -125,13 +131,12 @@ export default function Canales() {
     );
   });
 
-  // Colores por sección
   const C = {
-    id:       '#1A56DB',
-    ubicacion:'#059669',
-    entrega:  '#D97706',
-    contacto: '#0891B2',
-    comercial:'#7C3AED',
+    id:        '#1A56DB',
+    ubicacion: '#059669',
+    entrega:   '#D97706',
+    contacto:  '#0891B2',
+    comercial: '#7C3AED',
   };
 
   return (
@@ -201,6 +206,11 @@ export default function Canales() {
               {c.diasCredito && Number(c.diasCredito) > 0 && (
                 <div style={{ fontSize: 12, color: 'var(--primary)', marginTop: 2 }}>
                   Crédito: {str(c.diasCredito)} días
+                </div>
+              )}
+              {c.cupoCredito && Number(c.cupoCredito) > 0 && (
+                <div style={{ fontSize: 12, color: 'var(--text2)', marginTop: 2 }}>
+                  Cupo: {formatCupo(c.cupoCredito)}
                 </div>
               )}
             </div>
@@ -334,7 +344,17 @@ export default function Canales() {
             </select>
           </Field>
           <Field label="Cupo de crédito (USD)" color={C.comercial}>
-            <input type="number" value={form.cupoCredito} onChange={e => set('cupoCredito', e.target.value)} />
+            <input
+              type="number"
+              value={form.cupoCredito}
+              onChange={e => set('cupoCredito', e.target.value)}
+              placeholder="Ej: 100000"
+            />
+            {form.cupoCredito && Number(form.cupoCredito) > 0 && (
+              <div style={{ fontSize: 11, color: 'var(--text2)', marginTop: 4 }}>
+                = {formatCupo(form.cupoCredito)}
+              </div>
+            )}
           </Field>
           <Field label="Riesgo crediticio" color={C.comercial}>
             <select value={form.riesgoCredito} onChange={e => set('riesgoCredito', e.target.value)}>
