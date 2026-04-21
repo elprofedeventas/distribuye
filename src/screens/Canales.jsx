@@ -251,14 +251,14 @@ export default function Canales() {
           <Field label="Agente de retención" color={C.id}>
             <select value={form.agenteRetencion} onChange={e => set('agenteRetencion', e.target.value)}>
               <option value="">— Seleccionar —</option>
-              <option value="Si">Si</option>
+              <option value="Sí">Sí</option>
               <option value="No">No</option>
             </select>
           </Field>
           <Field label="Contribuyente especial" color={C.id}>
             <select value={form.contribuyenteEspecial} onChange={e => set('contribuyenteEspecial', e.target.value)}>
               <option value="">— Seleccionar —</option>
-              <option value="Si">Si</option>
+              <option value="Sí">Sí</option>
               <option value="No">No</option>
             </select>
           </Field>
