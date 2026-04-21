@@ -323,8 +323,8 @@ export default function OrdenDetalle() {
           const ivaLinea = subtotalLinea * ivaRate;
           return (
             <div key={d.id} className="card" style={{ borderColor: incDet ? 'var(--danger)' : 'var(--border)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
+                <div style={{ flex: 1 }}>
                   <div style={{ fontWeight: 500, display: 'flex', alignItems: 'center', gap: 6 }}>
                     {incDet && <AlertTriangle size={13} color="var(--danger)" />}
                     {d.nombre}
@@ -336,23 +336,23 @@ export default function OrdenDetalle() {
                     </div>
                   )}
                 </div>
-                <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontWeight: 600 }}>
+                <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                  <div style={{ fontWeight: 700, fontSize: 14 }}>
                     {d.cantPedida} caja{Number(d.cantPedida) > 1 ? 's' : ''}
-                    {d.cantUnidades && (
-                      <span style={{ fontSize: 11, fontWeight: 400, color: 'var(--text2)', marginLeft: 6 }}>
-                        ({d.cantUnidades} und.)
-                      </span>
-                    )}
                   </div>
-                  <div style={{ fontSize: 12, color: 'var(--text2)' }}>
-                    {formatMonto(precioFinal * Number(d.unidadesCaja || 1))} c/caja
+                  {d.cantUnidades && (
+                    <div style={{ fontSize: 11, color: 'var(--text2)' }}>
+                      ({d.cantUnidades} und.)
+                    </div>
+                  )}
+                  <div style={{ fontSize: 12, color: 'var(--text2)', marginTop: 4 }}>
+                    Subtotal {formatMonto(subtotalLinea)}
                   </div>
                   <div style={{ fontSize: 11, color: 'var(--text2)' }}>
                     +IVA {(ivaRate * 100).toFixed(0)}%: {formatMonto(ivaLinea)}
                   </div>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--success)' }}>
-                    {formatMonto(subtotalLinea + ivaLinea)}
+                  <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--success)', marginTop: 2 }}>
+                    Total {formatMonto(subtotalLinea + ivaLinea)}
                   </div>
                 </div>
               </div>
