@@ -225,7 +225,7 @@ function ItemCard({ i, onAjustar, onLote, soloLectura }) {
             color: i.alerta ? 'var(--danger)' : 'var(--success)', marginTop: 4 }}>
             {i.stockActual}
             <span style={{ fontSize: 11, fontWeight: 400, color: 'var(--text2)', marginLeft: 4 }}>
-              / mín {i.stockMinimo}
+              cajas / mín {i.stockMinimo} cajas
             </span>
           </div>
         </div>
