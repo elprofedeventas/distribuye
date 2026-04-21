@@ -19,6 +19,16 @@ const empty = {
 
 const str = (v) => (v === undefined || v === null) ? '' : String(v);
 
+const SectionHeader = ({ label, color }) => (
+  <div style={{
+    fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase',
+    marginBottom: 8, marginTop: 16, padding: '6px 10px', borderRadius: 6,
+    background: `${color}22`, color, borderLeft: `3px solid ${color}`,
+  }}>
+    {label}
+  </div>
+);
+
 export default function Canales() {
   const { call, loading } = useApi();
   const { usuario } = useApp();
@@ -190,10 +200,7 @@ export default function Canales() {
       {modal && (
         <Modal title={editId ? 'Editar Cliente' : 'Nuevo Cliente'} onClose={() => setModal(false)}>
 
-          {/* IDENTIFICACIÓN */}
-          <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text2)', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 8, marginTop: 4 }}>
-            Identificación
-          </div>
+          <SectionHeader label="Identificación" color="#1A56DB" />
           <div className="form-group"><label>Razón Social *</label>
             <input value={form.nombre} onChange={e => set('nombre', e.target.value)} /></div>
           <div className="form-group"><label>Nombre Comercial</label>
@@ -235,10 +242,7 @@ export default function Canales() {
             </select>
           </div>
 
-          {/* UBICACIÓN */}
-          <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text2)', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 8, marginTop: 16 }}>
-            Ubicación
-          </div>
+          <SectionHeader label="Ubicación" color="#059669" />
           <div className="form-group"><label>País</label>
             <input value={form.pais} onChange={e => set('pais', e.target.value)} /></div>
           <div className="form-group"><label>Provincia</label>
@@ -252,10 +256,7 @@ export default function Canales() {
           <div className="form-group"><label>Dirección facturación</label>
             <input value={form.direccion} onChange={e => set('direccion', e.target.value)} /></div>
 
-          {/* ENTREGA */}
-          <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text2)', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 8, marginTop: 16 }}>
-            Entrega
-          </div>
+          <SectionHeader label="Entrega" color="#D97706" />
           <div className="form-group"><label>Dirección entrega</label>
             <input value={form.direccionEntrega} onChange={e => set('direccionEntrega', e.target.value)} /></div>
           <div className="form-group"><label>Ciudad entrega</label>
@@ -263,10 +264,7 @@ export default function Canales() {
           <div className="form-group"><label>Días programados de entrega</label>
             <input value={form.diasEntrega} onChange={e => set('diasEntrega', e.target.value)} /></div>
 
-          {/* CONTACTO */}
-          <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text2)', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 8, marginTop: 16 }}>
-            Contacto
-          </div>
+          <SectionHeader label="Contacto" color="#0891B2" />
           <div className="form-group"><label>Contacto comercial</label>
             <input value={form.contacto} onChange={e => set('contacto', e.target.value)} /></div>
           <div className="form-group"><label>Email comercial</label>
@@ -278,10 +276,7 @@ export default function Canales() {
           <div className="form-group"><label>WhatsApp</label>
             <input value={form.whatsapp} onChange={e => set('whatsapp', e.target.value)} inputMode="numeric" /></div>
 
-          {/* COMERCIAL */}
-          <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text2)', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 8, marginTop: 16 }}>
-            Comercial
-          </div>
+          <SectionHeader label="Comercial" color="#7C3AED" />
           <div className="form-group"><label>Lista de precios</label>
             <select value={form.listaPrecios} onChange={e => set('listaPrecios', e.target.value)}>
               <option value="">— Seleccionar —</option>
