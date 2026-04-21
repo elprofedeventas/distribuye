@@ -345,7 +345,9 @@ export default function OrdenDetalle() {
                       </span>
                     )}
                   </div>
-                  <div style={{ fontSize: 12, color: 'var(--text2)' }}>{formatMonto(precioFinal)} c/u</div>
+                  <div style={{ fontSize: 12, color: 'var(--text2)' }}>
+                    {formatMonto(precioFinal * Number(d.unidadesCaja || 1))} c/caja
+                  </div>
                   <div style={{ fontSize: 11, color: 'var(--text2)' }}>
                     +IVA {(ivaRate * 100).toFixed(0)}%: {formatMonto(ivaLinea)}
                   </div>
