@@ -99,7 +99,7 @@ export default function ColaDespacho() {
                     <div style={{ fontWeight: 500 }}>{d.nombre}</div>
                     <div style={{ fontSize: 12, color: 'var(--text2)' }}>SKU: {d.sku} · {d.unidad}</div>
                     <div style={{ fontSize: 12, color: 'var(--text2)', marginTop: 2 }}>
-                      Pedido: <strong>{d.cantPedida}</strong>
+                      Pedido: <strong>{d.cantPedida} cajas</strong>
                     </div>
                     {loteSugerido && (
                       <div style={{
