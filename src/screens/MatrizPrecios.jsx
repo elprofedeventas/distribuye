@@ -132,7 +132,7 @@ export default function MatrizPrecios() {
                       <div style={{ fontSize: 12, marginTop: 6, display: 'flex', gap: 10, flexWrap: 'wrap' }}>
                         {prod && (
                           <span style={{ color: 'var(--text2)' }}>
-                            PVP: {formatMonto(pvp)}
+                            PVP: {formatMonto(pvp)} unidad · {formatMonto(pvp * unidadesCaja)} caja
                           </span>
                         )}
                         <span style={{ color: 'var(--success)', fontWeight: 600 }}>
