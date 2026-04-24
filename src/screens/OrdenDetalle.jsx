@@ -198,14 +198,22 @@ export default function OrdenDetalle() {
                       </span>}
                     </div>
                   </div>
-                  {!l.id && (
-                    <button className="btn btn-ghost" style={{ padding: '6px 10px' }} onClick={() => removeLinea(i)}>
-                      <Trash2 size={14} color="var(--danger)" />
-                    </button>
-                  )}
+                  <button className="btn btn-ghost" style={{ padding: '6px 10px' }}
+                    onClick={async () => {
+                      if (l.id) {
+                        await call('deleteOrdenDetalle', { id: l.id });
+                        load();
+                        setLineas(ls => ls.filter((_, j) => j !== i));
+                      } else {
+                        removeLinea(i);
+                      }
+                    }}>
+                    <Trash2 size={14} color="var(--danger)" />
+                  </button>
                 </div>
               </div>
             );
+          })}
           })}
         </div>
         <LoadingButton onClick={guardarEdicion} style={{ width: '100%', justifyContent: 'center' }}>
