@@ -339,6 +339,7 @@ export default function Canales() {
             <select value={form.diasCredito || '0'} onChange={e => set('diasCredito', e.target.value)}>
               <option value="0">Pago inmediato</option>
               <option value="30">30 días</option>
+              <option value="45">45 días</option>
               <option value="60">60 días</option>
               <option value="90">90 días</option>
             </select>
