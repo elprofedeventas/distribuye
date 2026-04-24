@@ -8,16 +8,26 @@ import { CheckCircle, AlertTriangle, Clock } from 'lucide-react';
 export default function Cartera() {
   const { call, loading } = useApi();
   const [resumen, setResumen] = useState({ pendiente: 0, vencido: 0, cobrado: 0, items: [] });
+  const [canales, setCanales] = useState([]);
   const [filtro, setFiltro] = useState('PENDIENTE');
   const [modal, setModal] = useState(null);
   const [notas, setNotas] = useState('');
 
   const load = async () => {
-    const data = await call('getCarteraResumen');
+    const [data, clientes] = await Promise.all([
+      call('getCarteraResumen'),
+      call('getCanales'),
+    ]);
     setResumen(data || { pendiente: 0, vencido: 0, cobrado: 0, items: [] });
+    setCanales(clientes || []);
   };
 
   useEffect(() => { load(); }, []);
+
+  const getListaPrecios = (clienteId) => {
+    const c = canales.find(c => c.id === clienteId);
+    return c?.listaPrecios || null;
+  };
 
   const marcarCobrado = async () => {
     await call('updateCartera', {
@@ -36,8 +46,7 @@ export default function Cartera() {
 
   const getDiasVencimiento = (fechaVenc) => {
     if (!fechaVenc) return null;
-    const diff = Math.ceil((new Date(fechaVenc) - hoy) / (1000 * 60 * 60 * 24));
-    return diff;
+    return Math.ceil((new Date(fechaVenc) - hoy) / (1000 * 60 * 60 * 24));
   };
 
   return (
@@ -82,6 +91,7 @@ export default function Cartera() {
           const dias = getDiasVencimiento(item.fechaVencimiento);
           const vencido = item.estado === 'VENCIDO';
           const proximoVencer = item.estado === 'PENDIENTE' && dias !== null && dias <= 7;
+          const listaPrecios = getListaPrecios(item.clienteId);
           return (
             <div key={item.id} className="card"
               style={{
@@ -91,8 +101,19 @@ export default function Cartera() {
               onClick={() => item.estado !== 'COBRADO' && (setModal(item), setNotas(item.notas || ''))}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 11, color: 'var(--primary)', fontWeight: 600, marginBottom: 2 }}>
-                    {item.numeroOrden}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
+                    <span style={{ fontSize: 11, color: 'var(--primary)', fontWeight: 600 }}>
+                      {item.numeroOrden}
+                    </span>
+                    {listaPrecios && (
+                      <span style={{
+                        fontSize: 10, fontWeight: 600, padding: '1px 6px', borderRadius: 4,
+                        background: 'var(--success)22', color: 'var(--success)',
+                        border: '1px solid var(--success)44',
+                      }}>
+                        {listaPrecios}
+                      </span>
+                    )}
                   </div>
                   <div style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
                     {vencido && <AlertTriangle size={14} color="var(--danger)" />}
@@ -141,8 +162,19 @@ export default function Cartera() {
       {modal && (
         <Modal title="Registrar cobro" onClose={() => setModal(null)}>
           <div style={{ marginBottom: 16 }}>
-            <div style={{ fontSize: 11, color: 'var(--primary)', fontWeight: 600, marginBottom: 4 }}>
-              {modal.numeroOrden}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+              <span style={{ fontSize: 11, color: 'var(--primary)', fontWeight: 600 }}>
+                {modal.numeroOrden}
+              </span>
+              {getListaPrecios(modal.clienteId) && (
+                <span style={{
+                  fontSize: 10, fontWeight: 600, padding: '1px 6px', borderRadius: 4,
+                  background: 'var(--success)22', color: 'var(--success)',
+                  border: '1px solid var(--success)44',
+                }}>
+                  {getListaPrecios(modal.clienteId)}
+                </span>
+              )}
             </div>
             <div style={{ fontWeight: 600 }}>{modal.clienteNombre}</div>
             <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--success)', marginTop: 6 }}>
