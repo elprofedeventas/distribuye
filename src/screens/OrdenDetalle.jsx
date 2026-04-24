@@ -22,6 +22,7 @@ export default function OrdenDetalle() {
   const [productos, setProductos] = useState([]);
   const [lineas, setLineas] = useState([]);
   const [modalStock, setModalStock] = useState(null);
+  const [modalEliminar, setModalEliminar] = useState(false);
 
   const hoy = formatFecha(new Date().toISOString());
   const soloLectura = usuario?.rol === ROLES.GERENCIA;
@@ -60,6 +61,21 @@ export default function OrdenDetalle() {
   const setLinea = (i, k, v) => setLineas(l => l.map((x, j) => j === i ? { ...x, [k]: v } : x));
   const addLinea = () => setLineas(l => [...l, { productoId: '', cantPedida: 1 }]);
   const removeLinea = (i) => setLineas(l => l.filter((_, j) => j !== i));
+
+  const eliminarLinea = async (l, i) => {
+    if (l.id) {
+      await call('deleteOrdenDetalle', { id: l.id });
+      setLineas(ls => ls.filter((_, j) => j !== i));
+      load();
+    } else {
+      removeLinea(i);
+    }
+  };
+
+  const eliminarOrden = async () => {
+    await call('deleteOrden', { id });
+    navigate('/ordenes');
+  };
 
   const guardarEdicion = async () => {
     if (lineas.length === 0) return;
@@ -141,6 +157,7 @@ export default function OrdenDetalle() {
   const puedeConfirmar = !soloLectura && orden.estado === 'BORRADOR' && usuario?.rol !== ROLES.DESPACHADOR;
   const puedeProgramar = !soloLectura && orden.estado === 'CONFIRMADA' && usuario?.rol !== ROLES.DESPACHADOR;
   const puedeEditar = !soloLectura && orden.estado === 'BORRADOR' && usuario?.rol !== ROLES.DESPACHADOR;
+  const puedeEliminar = !soloLectura && orden.estado === 'BORRADOR' && usuario?.rol !== ROLES.DESPACHADOR;
   const incidenciasAbiertas = incidencias.filter(i => i.estado === 'ABIERTA');
 
   if (editando) {
@@ -199,21 +216,12 @@ export default function OrdenDetalle() {
                     </div>
                   </div>
                   <button className="btn btn-ghost" style={{ padding: '6px 10px' }}
-                    onClick={async () => {
-                      if (l.id) {
-                        await call('deleteOrdenDetalle', { id: l.id });
-                        load();
-                        setLineas(ls => ls.filter((_, j) => j !== i));
-                      } else {
-                        removeLinea(i);
-                      }
-                    }}>
+                    onClick={() => eliminarLinea(l, i)}>
                     <Trash2 size={14} color="var(--danger)" />
                   </button>
                 </div>
               </div>
             );
-          })}
           })}
         </div>
         <LoadingButton onClick={guardarEdicion} style={{ width: '100%', justifyContent: 'center' }}>
@@ -292,8 +300,6 @@ export default function OrdenDetalle() {
             {orden.notas}
           </div>
         )}
-
-        {/* Estado de facturación */}
         {orden.estado === 'ENTREGADA' && (
           <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -383,6 +389,14 @@ export default function OrdenDetalle() {
         </LoadingButton>
       )}
 
+      {puedeEliminar && (
+        <button className="btn btn-danger"
+          style={{ width: '100%', justifyContent: 'center', marginBottom: 10 }}
+          onClick={() => setModalEliminar(true)}>
+          <Trash2 size={16} style={{ marginRight: 6 }} /> Eliminar orden
+        </button>
+      )}
+
       {puedeProgramar && (
         <div>
           <div style={{ display: 'flex', gap: 10, marginBottom: 6 }}>
@@ -423,6 +437,24 @@ export default function OrdenDetalle() {
               onClick={() => setModalStock(null)}>Cancelar</button>
             <LoadingButton onClick={confirmar} style={{ flex: 1, justifyContent: 'center' }}>
               <CalendarCheck size={16} style={{ marginRight: 6 }} /> Confirmar igual
+            </LoadingButton>
+          </div>
+        </Modal>
+      )}
+
+      {modalEliminar && (
+        <Modal title="Eliminar orden" onClose={() => setModalEliminar(false)}>
+          <p style={{ fontSize: 13, color: 'var(--text2)', marginBottom: 20 }}>
+            ¿Estás seguro que deseas eliminar la orden <strong>{orden.numeroOrden}</strong> de <strong>{orden.canalNombre}</strong>? Esta acción no se puede deshacer.
+          </p>
+          <div style={{ display: 'flex', gap: 10 }}>
+            <button className="btn btn-ghost" style={{ flex: 1, justifyContent: 'center' }}
+              onClick={() => setModalEliminar(false)}>
+              Cancelar
+            </button>
+            <LoadingButton onClick={eliminarOrden} className="btn btn-danger"
+              style={{ flex: 1, justifyContent: 'center' }}>
+              <Trash2 size={16} style={{ marginRight: 6 }} /> Eliminar
             </LoadingButton>
           </div>
         </Modal>
