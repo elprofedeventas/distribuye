@@ -3,18 +3,18 @@
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --bg: #0f172a;
-  --surface: #1e293b;
-  --surface2: #334155;
-  --border: #475569;
-  --text: #f1f5f9;
-  --text2: #94a3b8;
-  --primary: #3b82f6;
-  --primary-dark: #2563eb;
-  --danger: #ef4444;
-  --success: #22c55e;
-  --warning: #f59e0b;
-  --purple: #8b5cf6;
+  --bg: #F8F9FA;
+  --surface: #FFFFFF;
+  --surface2: #F1F3F5;
+  --border: #DEE2E6;
+  --text: #212529;
+  --text2: #6C757D;
+  --primary: #1A56DB;
+  --primary-dark: #1347C8;
+  --danger: #DC2626;
+  --success: #059669;
+  --warning: #D97706;
+  --purple: #7C3AED;
 }
 
 body {
@@ -34,7 +34,7 @@ button {
 
 input, select, textarea {
   font-family: 'Inter', sans-serif;
-  background: var(--surface2);
+  background: var(--surface);
   border: 1px solid var(--border);
   color: var(--text);
   border-radius: 8px;
@@ -46,6 +46,7 @@ input, select, textarea {
 input:focus, select:focus, textarea:focus {
   outline: none;
   border-color: var(--primary);
+  box-shadow: 0 0 0 3px #1A56DB18;
 }
 
 .btn {
@@ -61,7 +62,7 @@ input:focus, select:focus, textarea:focus {
 .btn:hover { opacity: 0.85; }
 .btn-primary { background: var(--primary); color: #fff; }
 .btn-danger { background: var(--danger); color: #fff; }
-.btn-ghost { background: var(--surface2); color: var(--text); }
+.btn-ghost { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
 .btn-success { background: var(--success); color: #fff; }
 
 .card {
@@ -69,6 +70,7 @@ input:focus, select:focus, textarea:focus {
   border: 1px solid var(--border);
   border-radius: 12px;
   padding: 16px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
 }
 
 .page { padding: 16px; max-width: 640px; margin: 0 auto; }
