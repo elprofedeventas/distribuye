@@ -17,6 +17,7 @@ import MatrizPrecios from './screens/MatrizPrecios';
 import Metas from './screens/Metas';
 import Cartera from './screens/Cartera';
 import Alertas from './screens/Alertas';
+import Graficos from './screens/Graficos';
 
 const { GERENCIA, VENTAS, OPERACIONES, DESPACHADOR } = ROLES;
 const TODOS = [GERENCIA, VENTAS, OPERACIONES, DESPACHADOR];
@@ -114,6 +115,12 @@ export default function App() {
         <Route path="alertas" element={
           <ProtectedRoute roles={[GERENCIA]}>
             <Alertas />
+          </ProtectedRoute>
+        } />
+
+        <Route path="graficos" element={
+          <ProtectedRoute roles={[GERENCIA]}>
+            <Graficos />
           </ProtectedRoute>
         } />
       </Route>

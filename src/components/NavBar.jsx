@@ -1,7 +1,7 @@
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import { ROLES } from '../utils/constants';
-import { LayoutDashboard, Users, Package, Warehouse, ClipboardList, Truck, AlertTriangle, LogOut, Tag, Target, CreditCard, Bell } from 'lucide-react';
+import { LayoutDashboard, Users, Package, Warehouse, ClipboardList, Truck, AlertTriangle, LogOut, Tag, Target, CreditCard, Bell, BarChart2 } from 'lucide-react';
 
 const { GERENCIA, VENTAS, OPERACIONES, DESPACHADOR } = ROLES;
 
@@ -16,6 +16,7 @@ const navItems = [
   { path: '/despacho',    label: 'Despacho',    icon: Truck,           roles: [GERENCIA, DESPACHADOR] },
   { path: '/incidencias', label: 'Reclamos',    icon: AlertTriangle,   roles: null },
   { path: '/alertas', label: 'Alertas', icon: Bell, roles: [GERENCIA] },
+  { path: '/graficos', label: 'Gráficos', icon: BarChart2, roles: [GERENCIA] },
   { path: '/cartera', label: 'Cartera', icon: CreditCard, roles: [GERENCIA, VENTAS, OPERACIONES] },
 ];
 
