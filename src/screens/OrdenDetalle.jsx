@@ -6,7 +6,8 @@ import { useApp } from '../context/AppContext';
 import Badge from '../components/Badge';
 import Modal from '../components/Modal';
 import LoadingButton from '../components/LoadingButton';
-import { ArrowLeft, Truck, CalendarCheck, AlertTriangle, Plus, Trash2, FileCheck } from 'lucide-react';
+import { ArrowLeft, Truck, CalendarCheck, AlertTriangle, Plus, Trash2, FileCheck, Ban } from 'lucide-react';
+import { cargarCredito, puedeConfirmar } from '../utils/credito';
 
 export default function OrdenDetalle() {
   const { id } = useParams();
@@ -22,6 +23,7 @@ export default function OrdenDetalle() {
   const [productos, setProductos] = useState([]);
   const [lineas, setLineas] = useState([]);
   const [modalStock, setModalStock] = useState(null);
+  const [modalCupo, setModalCupo] = useState(null);
   const [modalEliminar, setModalEliminar] = useState(false);
 
   const hoy = formatFecha(new Date().toISOString());
@@ -116,6 +118,12 @@ export default function OrdenDetalle() {
   };
 
   const intentarConfirmar = async () => {
+    const credito = await cargarCredito(call, orden.canalId, orden.id);
+    const check = puedeConfirmar(credito, orden.total);
+    if (!check.ok) {
+      setModalCupo({ credito, montoOrden: Number(orden.total || 0), excedente: check.excedente });
+      return;
+    }
     const inventario = await call('getInventario');
     const problemas = [];
     detalle.forEach(d => {
@@ -439,6 +447,50 @@ export default function OrdenDetalle() {
               <CalendarCheck size={16} style={{ marginRight: 6 }} /> Confirmar igual
             </LoadingButton>
           </div>
+        </Modal>
+      )}
+
+      {modalCupo && (
+        <Modal title="Cupo de crédito excedido" onClose={() => setModalCupo(null)}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+            <Ban size={20} color="var(--danger)" />
+            <span style={{ fontSize: 13, color: 'var(--danger)', fontWeight: 600 }}>
+              No se puede confirmar esta orden
+            </span>
+          </div>
+          <p style={{ fontSize: 13, color: 'var(--text2)', marginBottom: 16 }}>
+            Confirmar esta orden haría que <strong>{orden.canalNombre}</strong> exceda su cupo de crédito autorizado.
+          </p>
+          <div className="card" style={{ marginBottom: 16 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginBottom: 6 }}>
+              <span style={{ color: 'var(--text2)' }}>Cupo total</span>
+              <span style={{ fontWeight: 600 }}>{formatMonto(modalCupo.credito.cupoCredito)}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginBottom: 6 }}>
+              <span style={{ color: 'var(--text2)' }}>Deuda facturada</span>
+              <span>{formatMonto(modalCupo.credito.deudaFacturada)}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginBottom: 6 }}>
+              <span style={{ color: 'var(--text2)' }}>Órdenes comprometidas</span>
+              <span>{formatMonto(modalCupo.credito.deudaComprometida)}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, fontWeight: 600, borderTop: '1px solid var(--border)', paddingTop: 8, marginTop: 4 }}>
+              <span>Cupo disponible</span>
+              <span>{formatMonto(modalCupo.credito.cupoDisponible)}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginTop: 8 }}>
+              <span style={{ color: 'var(--text2)' }}>Monto de esta orden</span>
+              <span style={{ fontWeight: 600 }}>{formatMonto(modalCupo.montoOrden)}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14, fontWeight: 700, color: 'var(--danger)', borderTop: '1px solid var(--border)', paddingTop: 8, marginTop: 4 }}>
+              <span>Excedente</span>
+              <span>{formatMonto(modalCupo.excedente)}</span>
+            </div>
+          </div>
+          <button className="btn btn-ghost" style={{ width: '100%', justifyContent: 'center' }}
+            onClick={() => setModalCupo(null)}>
+            Cerrar
+          </button>
         </Modal>
       )}
 

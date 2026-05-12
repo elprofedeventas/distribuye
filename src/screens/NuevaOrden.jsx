@@ -3,8 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { useApi } from '../hooks/useApi';
 import { useApp } from '../context/AppContext';
 import { formatFecha, formatMonto } from '../utils/constants';
-import { Trash2, Plus } from 'lucide-react';
+import { Trash2, Plus, Wallet, AlertTriangle } from 'lucide-react';
 import LoadingButton from '../components/LoadingButton';
+import { cargarCredito } from '../utils/credito';
 
 export default function NuevaOrden() {
   const { call } = useApi();
@@ -16,6 +17,7 @@ export default function NuevaOrden() {
   const [canalId, setCanalId] = useState('');
   const [notas, setNotas] = useState('');
   const [lineas, setLineas] = useState([]);
+  const [credito, setCredito] = useState(null);
 
   useEffect(() => {
     call('getCanales').then(d => setCanales(d || []));
@@ -23,8 +25,9 @@ export default function NuevaOrden() {
   }, []);
 
   useEffect(() => {
-    if (!canalId) { setMatrizPrecios([]); return; }
+    if (!canalId) { setMatrizPrecios([]); setCredito(null); return; }
     call('getPreciosCliente', { clienteId: canalId }).then(d => setMatrizPrecios(d || []));
+    cargarCredito(call, canalId).then(setCredito).catch(() => setCredito(null));
   }, [canalId]);
 
   const addLinea = () => setLineas(l => [...l, { productoId: '', cajas: 1 }]);
@@ -101,6 +104,63 @@ export default function NuevaOrden() {
           {canales.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
         </select>
       </div>
+
+      {canalId && credito && (() => {
+        if (credito.esContado) {
+          return (
+            <div className="card" style={{ marginBottom: 16, borderColor: 'var(--border)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Wallet size={16} color="var(--text2)" />
+                <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)' }}>
+                  Venta de contado
+                </span>
+              </div>
+              <div style={{ fontSize: 12, color: 'var(--text2)', marginTop: 4 }}>
+                Este cliente no tiene cupo de crédito asignado.
+              </div>
+            </div>
+          );
+        }
+        const cupoTrasOrden = Number(credito.cupoDisponible) - Number(totales.total || 0);
+        const excede = cupoTrasOrden < 0;
+        const color = excede ? 'var(--danger)' : 'var(--success)';
+        return (
+          <div className="card" style={{ marginBottom: 16, borderColor: color }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+              <Wallet size={16} color={color} />
+              <span style={{ fontSize: 13, fontWeight: 600, color }}>
+                Cupo de crédito
+              </span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 4 }}>
+              <span style={{ color: 'var(--text2)' }}>Cupo total</span>
+              <span>{formatMonto(credito.cupoCredito)}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 4 }}>
+              <span style={{ color: 'var(--text2)' }}>Deuda actual</span>
+              <span>{formatMonto(credito.deudaTotal)}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, fontWeight: 600, borderTop: '1px solid var(--border)', paddingTop: 6, marginTop: 4 }}>
+              <span>Cupo disponible</span>
+              <span>{formatMonto(credito.cupoDisponible)}</span>
+            </div>
+            {lineas.length > 0 && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, fontWeight: 700, color, marginTop: 6 }}>
+                <span>Tras esta orden</span>
+                <span>{formatMonto(cupoTrasOrden)}</span>
+              </div>
+            )}
+            {excede && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 8, padding: 8, background: 'var(--danger)11', borderRadius: 6 }}>
+                <AlertTriangle size={14} color="var(--danger)" />
+                <span style={{ fontSize: 11, color: 'var(--danger)', fontWeight: 600 }}>
+                  Esta orden excederá el cupo y no podrá confirmarse
+                </span>
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       <div className="form-group">
         <label>Notas</label>
